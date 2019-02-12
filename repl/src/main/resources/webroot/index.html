@@ -1,6 +1,27 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="bootstrap.css" />
+        <link rel="stylesheet" type="text/css" href="styles.css" />
+        <script defer src="promise.js"></script>
+        <script defer src="fetch.js"></script>
+        <script defer src="app.js"></script>
+    </head>
     <body>
-        This works.
+        <div class="container-fluid full-height">
+            <div class="row full-height">
+                
+                <div id="query-pane" class="col" style="height: 95%">
+                    <div class="form-group full-height position-relative">
+                        <textarea class="form-control position-absolute" style="top:0; bottom: 2em"></textarea>
+                        <button id="submit-button" class="btn btn-primary position-absolute" style="bottom: 0; width: 100%">Submit</button>
+                    </div>
+                </div>
+                
+                
+                <div id="results-pane" class="col full-height flex-column">
+                </div>
+            </div>
+        </div>
     </body>
 </html>

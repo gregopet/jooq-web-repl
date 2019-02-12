@@ -1,0 +1,4 @@
+html, body, .full-height { 
+    /* Reserve all height for our purposes */
+    height: 100%;
+}

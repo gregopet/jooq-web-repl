@@ -3,6 +3,9 @@ plugins {
   id 'application'
   id 'com.github.johnrengelman.shadow' version '4.0.2'
 }
+subprojects {
+  apply plugin: 'java'
+}
 
 repositories {
   jcenter()
@@ -11,6 +14,7 @@ repositories {
 sourceCompatibility = '1.8'
 
 dependencies {
+  compile project(":evaluator")
   compile "io.vertx:vertx-core:$vertxVersion"
   compile "io.vertx:vertx-web:$vertxVersion"
 }

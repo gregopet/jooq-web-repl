@@ -1,6 +1,14 @@
 const APP = (function() {
-    function test() {
-        fetch("/test-ajax")
+
+    function init() {
+        document.querySelector('#submit-button').addEventListener("click", eval);
+    }
+
+    function eval() {
+        fetch("/eval", {
+            method: 'POST',
+            body: document.querySelector('#script-content').value
+        })
         .then( resp => {
             return resp.text();
         })
@@ -10,10 +18,10 @@ const APP = (function() {
     }
     
     return {
-        test: test
+        init: init
     }
 })();
 
 document.addEventListener("DOMContentLoaded", function(event) {
-    APP.test();
+    APP.init();
 });

@@ -3,11 +3,15 @@ package co.petrin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class WebInterface {
 
@@ -22,7 +26,20 @@ public class WebInterface {
                 .setFileSystemOptions(new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false)) //allow dev reloading
         );
 
+        final var databases = Database.parseFromEnvironment();
+        if (databases.isEmpty()) {
+            LOG.warn("No databases were found!");
+        } else {
+            LOG.info("Found " + databases.size() + " databases:");
+            for (var db : databases) {
+                LOG.info("  " + db.toString());
+            }
+        }
+        final String databaseJson = getDatabasesJson(databases);
+
+
         Router router = Router.router(vertx);
+        router.get("/databases").handler(rc -> rc.response().putHeader("Content-Type", "application/json").end(databaseJson));
         router.post("/eval").handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).handler(new ScriptHandler());
         router.route("/*").handler(
             StaticHandler.create()
@@ -41,4 +58,10 @@ public class WebInterface {
         });
     }
 
+    private static String getDatabasesJson(List<Database> databaseList) {
+        return new JsonObject(
+            databaseList.stream()
+            .collect(Collectors.toMap(db -> Integer.toString(db.id), db -> db.description))
+        ).toString();
+    }
 }

@@ -31,3 +31,16 @@ shadowJar {
     include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
   }
 }
+
+run {
+  // Development configuration, assumes a Postgres 10 database running on the local machine
+  classpath += files('../postgres/postgresql-9.1-901-1.jdbc4.jar')
+  environment([
+        DATABASE_POSTGRES_DESCRIPTION : 'Latest postgres database image',
+        DATABASE_POSTGRES_URL : 'jdbc:postgresql://postgres:5432/sakila',
+        DATABASE_POSTGRES_USER : 'postgres',
+        DATABASE_POSTGRES_PASSWORD : '',
+        DATABASE_POSTGRES_DRIVER : 'org.postgresql.Driver',
+        DATABASE_POSTGRES_SQLDIALECT : 'POSTGRES_10'
+  ])
+}

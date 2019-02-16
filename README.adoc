@@ -1,0 +1,27 @@
+= Online jOOQ REPL
+
+== Defining the available databases
+
+The application must be told about the databases at its disposal using
+environment variables. On startup, the application will look for any 
+environment variables of the form `DATABASE_<unique_database_key>_URL` (where
+`unique_database_key` is any valid environment variable name).
+
+This property must contain a connection string that can be used by JDBC. In
+addition to it several more properties can be defined using the same prefix
+but replacing `URL` with:
+
+DESCRIPTION:: the text to be shown for this connection on the user interface
+USER:: the username to use when connecting to this database
+PASSWORD:: the password to use when connecting to this database
+DRIVER:: if present, the class with that name that will be registered using
+`Class.forName`
+SQLDIALECT:: a name matching one of the `org.jooq.SQLDialect` members (if none
+is given, jOOQ connections to this database will be created using 
+`SQLDialect.DEFAULT`.
+
+For example, to define a database using the key 'OLD_POSTGRES' one could use
+environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 
+`DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER`, 
+`DATABASE_OLD_POSTGRES_PASSWORD`, `DATABASE_OLD_POSTGRES_DRIVER` and
+`DATABASE_OLD_POSTGRES_SQLDIALECT`.

@@ -11,7 +11,7 @@ repositories {
   jcenter()
 }
 
-sourceCompatibility = '1.8'
+sourceCompatibility = '1.11'
 
 dependencies {
   compile project(":evaluator")

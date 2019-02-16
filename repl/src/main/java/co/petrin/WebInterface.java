@@ -3,11 +3,15 @@ package co.petrin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class WebInterface {
+
+    private static final Logger LOG = LoggerFactory.getLogger(WebInterface.class);
 
     /** Maximum length of scripts incoming in request bodies in bytes */
     private static long BODY_SIZE_LIMIT = 100_000; // is this enough?
@@ -30,9 +34,9 @@ public class WebInterface {
         .requestHandler(router)
         .listen(8080, handler -> {
             if (handler.succeeded()) {
-                System.out.println("http://localhost:8080/");
+                LOG.info("Server running on port 8080");
             } else {
-                System.err.println("Failed to listen on port 8080");
+                LOG.error("Failed to listen on port 8080");
             }
         });
     }

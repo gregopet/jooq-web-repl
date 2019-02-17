@@ -3,6 +3,15 @@ const APP = (function() {
     function init() {
         document.querySelector('#submit-button').addEventListener("click", eval);
         fetchDatabases();
+        catchGlobalShortcuts();
+    }
+
+    function catchGlobalShortcuts() {
+        document.addEventListener("keydown", ev => {
+            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "Enter") {
+                eval();
+            }
+        })
     }
 
     function fetchDatabases() {

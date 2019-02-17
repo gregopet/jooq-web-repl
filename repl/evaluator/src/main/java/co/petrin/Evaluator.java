@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Evaluator {
 
-    public String evaluate(String scriptToEvaluate) {
+    public String evaluate(Database db, String scriptToEvaluate) {
 
         //https://docs.oracle.com/javase/9/docs/api/jdk/jshell/package-summary.html
         try (var js = JShell.create()) {

@@ -17,30 +17,15 @@ public class WebInterface {
 
     private static final Logger LOG = LoggerFactory.getLogger(WebInterface.class);
 
-    /** Maximum length of scripts incoming in request bodies in bytes */
-    private static long BODY_SIZE_LIMIT = 100_000; // is this enough?
-
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx(
             new VertxOptions()
                 .setFileSystemOptions(new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false)) //allow dev reloading
         );
 
-        final var databases = Database.parseFromEnvironment();
-        if (databases.isEmpty()) {
-            LOG.warn("No databases were found!");
-        } else {
-            LOG.info("Found " + databases.size() + " databases:");
-            for (var db : databases) {
-                LOG.info("  " + db.toString());
-            }
-        }
-        final String databaseJson = getDatabasesJson(databases);
+        var router = Router.router(vertx);
+        router.mountSubRouter("/databases", new ScriptHandler().getRouter(vertx));
 
-
-        Router router = Router.router(vertx);
-        router.get("/databases").handler(rc -> rc.response().putHeader("Content-Type", "application/json").end(databaseJson));
-        router.post("/eval").handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).handler(new ScriptHandler());
         router.route("/*").handler(
             StaticHandler.create()
                 .setFilesReadOnly(false).setWebRoot("src/main/resources/webroot") // allow dev reloading
@@ -56,12 +41,5 @@ public class WebInterface {
                 LOG.error("Failed to listen on port 8080");
             }
         });
-    }
-
-    private static String getDatabasesJson(List<Database> databaseList) {
-        return new JsonObject(
-            databaseList.stream()
-            .collect(Collectors.toMap(db -> Integer.toString(db.id), db -> db.description))
-        ).toString();
     }
 }

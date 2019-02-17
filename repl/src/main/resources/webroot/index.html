@@ -8,17 +8,29 @@
         <script defer src="app.js"></script>
     </head>
     <body>
-        <div class="container-fluid full-height">
+        <div id="app-container" class="container-fluid full-height">
+
             <div class="row full-height">
-                
-                <div id="query-pane" class="col" style="height: 95%">
+
+                <div class="top-bar">
+                    <h1>jOOQ REPL</h1>
+
+                    <div id="database-select-wrapper">
+                        <label for="database-select">Database:</label>
+                        <select id="database-select">
+                            <option placeholder>..please wait..</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="query-pane" class="col full-height">
                     <div class="form-group full-height position-relative">
-                        <textarea id="script-content" class="form-control position-absolute" style="top:0; bottom: 2em"></textarea>
+                        <textarea id="script-content" class="form-control position-absolute" style="top:0; bottom: 2em" autofocus placeholder="jooq.selectFrom(TABLE).fetch()"></textarea>
                         <button id="submit-button" class="btn btn-primary position-absolute" style="bottom: 0; width: 100%">Submit</button>
                     </div>
                 </div>
-                
-                <pre id="results-pane" class="col full-height flex-column">
+
+                <pre id="results-pane" class="col full-height mb-0">
                 </pre>
             </div>
         </div>

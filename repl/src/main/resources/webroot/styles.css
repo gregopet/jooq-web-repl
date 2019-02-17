@@ -2,3 +2,44 @@ html, body, .full-height {
     /* Reserve all height for our purposes */
     height: 100%;
 }
+
+#app-container {
+    /* Some margin, allow absolutely posistioned elements to go in there */
+    padding-top: 65px; padding-bottom: 20px;
+    position: relative;
+}
+
+
+.top-bar {
+    /* Squeeze into the parent's margin (but leave a little white underneath) */
+    position: absolute;
+    height: 50px;
+    top: 0;
+    left: 0; right: 0;
+
+    /* White-on-black vertically centered content */
+    background-color: black;
+    color: white;
+    display: flex;
+    align-items: center;
+
+    padding-left: 15px;
+}
+/* Still more vertical centering stuff .. */
+.top-bar > *, #database-select-wrapper > * {
+    margin: 0;
+}
+
+.top-bar h1 {
+    font-size: 20px;
+    margin: 0;
+    margin-right: 5em;
+}
+
+
+
+#results-pane {
+    background-color: #eee;
+    margin-right: 15px;
+    scroll: auto;
+}

@@ -12,7 +12,10 @@ public class Evaluator {
         //https://docs.oracle.com/javase/9/docs/api/jdk/jshell/package-summary.html
         try (var js = JShell.create()) {
             List<SnippetEvent> events = js.eval(scriptToEvaluate);
-            if (events.size() != 1) {
+            if (events.size() == 0) {
+                return "";
+            }
+            else if (events.size() > 1) {
                 throw new IllegalStateException("Silly programmer didn't know he could get more than 1 event!");
             }
 

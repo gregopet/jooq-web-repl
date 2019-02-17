@@ -1,5 +1,7 @@
 const APP = (function() {
 
+    let executionInProgress = false;
+
     function init() {
         document.querySelector('#submit-button').addEventListener("click", eval);
         fetchDatabases();
@@ -33,16 +35,28 @@ const APP = (function() {
     }
 
     function eval() {
+        if (executionInProgress) return;
+        executionInProgress = true;
+
+        showLoader(true);
         fetch("/databases/" + getSelectedDatabase() + "/eval", {
             method: 'POST',
             body: document.querySelector('#script-content').value
         })
         .then( resp => {
+            showLoader(false);
+            executionInProgress = false;
             return resp.text();
         })
         .then( txt => {
             document.querySelector("#results-pane").innerHTML = txt
         });
+    }
+
+    function showLoader(show) {
+        if (show) {
+            document.querySelector("#results-pane").innerHTML = "... EXECUTING ...";
+        }
     }
     
     return {

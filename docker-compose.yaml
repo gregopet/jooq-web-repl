@@ -1,0 +1,28 @@
+version: '3'
+services:
+    postgres:
+        image: postgres
+        ports: 
+            - 5432:5432
+        volumes:
+            - ./postgres/disable-fsync.sh:/docker-entrypoint-initdb.d/1-disable-fsync.sh
+            - ./postgres/sakila.sql:/docker-entrypoint-initdb.d/2-sakila.sql
+        environment:
+            - POSTGRES_DB=sakila
+    repl:
+        build:
+            context: repl
+        ports:
+            - 8080:8080
+        links:
+            - postgres
+        volumes:
+            - ./postgres/postgresql-9.1-901-1.jdbc4.jar:/usr/src/webapp/extra-libs/postgresql-9.1-901-1.jdbc4.jar
+            - ./postgres/sakila-postgres.jar:/usr/src/webapp/extra-libs/sakila-postgres.jar
+        environment:
+            - DATABASE_POSTGRES_DESCRIPTION=Latest postgres database image
+            - DATABASE_POSTGRES_URL=jdbc:postgresql://postgres:5432/sakila
+            - DATABASE_POSTGRES_USER=postgres
+            - DATABASE_POSTGRES_PASSWORD=
+            - DATABASE_POSTGRES_DRIVER=org.postgresql.Driver
+            - DATABASE_POSTGRES_SQLDIALECT=POSTGRES_10

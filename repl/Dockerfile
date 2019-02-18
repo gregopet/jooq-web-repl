@@ -7,4 +7,4 @@ RUN ["./gradlew", "--no-daemon"]
 COPY evaluator ./evaluator
 COPY src ./src
 RUN ["./gradlew", "--no-daemon", "shadowJar"]
-CMD ["java", "-cp", "extra-libs/*", "-jar", "build/libs/webapp-fat.jar"]
+CMD ["java", "-cp", "extra-libs/*:build/libs/webapp-fat.jar", "co.petrin.WebInterface"]

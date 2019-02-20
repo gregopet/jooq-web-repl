@@ -49,7 +49,7 @@ const APP = (function() {
             return resp.text();
         })
         .then( txt => {
-            document.querySelector("#results-pane").innerHTML = txt
+            document.querySelector("#results-pane").innerText = txt
         });
     }
 

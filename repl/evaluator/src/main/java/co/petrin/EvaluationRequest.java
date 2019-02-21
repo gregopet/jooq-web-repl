@@ -5,6 +5,7 @@ package co.petrin;
  */
 public class EvaluationRequest {
     private String script;
+    private Integer cursorPosition;
 
     /** The script to execute */
     public String getScript() {
@@ -13,5 +14,14 @@ public class EvaluationRequest {
 
     public void setScript(String script) {
         this.script = script;
+    }
+
+    /** Gets where the cursor was when user invoked the action */
+    public Integer getCursorPosition() {
+        return cursorPosition;
+    }
+
+    public void setCursorPosition(Integer cursorPosition) {
+        this.cursorPosition = cursorPosition;
     }
 }

@@ -1,9 +1,12 @@
 const APP = (function() {
 
+    const scriptContent = document.querySelector('#script-content');
     const submitButton = document.querySelector('#submit-button');
+    const completeButton = document.querySelector('#complete-button');
 
     function init() {
         submitButton.addEventListener("click", eval);
+        completeButton.addEventListener("click", complete);
         fetchDatabases();
         catchGlobalShortcuts();
     }
@@ -40,7 +43,7 @@ const APP = (function() {
         showLoader(true);
         fetch("/databases/" + getSelectedDatabase() + "/eval", {
             method: 'POST',
-            body: JSON.stringify({ script: document.querySelector('#script-content').value })
+            body: JSON.stringify(getSnippet())
         })
         .then( resp => {
             showLoader(false);
@@ -49,6 +52,16 @@ const APP = (function() {
         })
         .then( result => document.querySelector("#results-pane").innerText = result.output)
         .catch ( err => document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err);
+    }
+    
+    /**
+    * Constructs a payload that can be sent to the server for evaluation, representing the current state of the snippet.
+    */
+    function getSnippet() {
+        return {
+            script: scriptContent.value,
+            cursorPosition:  scriptContent.selectionEnd
+        }
     }
 
     function showLoader(show) {

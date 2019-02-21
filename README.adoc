@@ -14,10 +14,10 @@ Docker and Gradle download all the dependencies)
 
 Then, point your browser to http://localhost:8000/ and try executing some
 queries. Try `jooq.selectFrom(FILM).fetch()` for example. Take a look at
-https://dev.mysql.com/doc/sakila/en/sakila-structure.html to get more ideas
-about queries to try. Look up jOOQ's documentation at 
-https://www.jooq.org/doc/latest/manual-single-page if you can't get a query
-to work.
+https://dev.mysql.com/doc/sakila/en/sakila-structure.html[the Sakila schema]
+to get more ideas about queries to try. Look up 
+https://www.jooq.org/doc/latest/manual-single-page[jOOQ's documentation] if
+you can't get a query to work.
 
 You can also try playing with the `docker-compose.yaml` file if you want to
 add additional RDBMS engines - MySQL should be simple. As for supporting

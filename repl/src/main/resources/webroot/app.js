@@ -6,7 +6,7 @@ const APP = (function() {
 
     function init() {
         submitButton.addEventListener("click", eval);
-        completeButton.addEventListener("click", complete);
+        completeButton.addEventListener("click", suggest);
         fetchDatabases();
         catchGlobalShortcuts();
     }
@@ -15,6 +15,9 @@ const APP = (function() {
         document.addEventListener("keydown", ev => {
             if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "Enter") {
                 eval();
+            }
+            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == " ") {
+                suggest();
             }
         })
     }
@@ -55,6 +58,21 @@ const APP = (function() {
     }
     
     /**
+     * Invoke suggestion mechanism.
+     */
+    function suggest() {
+        fetch("/databases/" + getSelectedDatabase() + "/suggest", {
+            method: 'POST',
+            body: JSON.stringify(getSnippet())
+        })
+        .then( resp => {
+            return resp.json();
+        })
+        .then( result => console.log(result))
+        .catch ( err => document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err);
+    }
+    
+    /**
     * Constructs a payload that can be sent to the server for evaluation, representing the current state of the snippet.
     */
     function getSnippet() {
@@ -63,7 +81,7 @@ const APP = (function() {
             cursorPosition:  scriptContent.selectionEnd
         }
     }
-
+    
     function showLoader(show) {
         if (show) {
             document.querySelector("#results-pane").innerHTML = "... EXECUTING ...";

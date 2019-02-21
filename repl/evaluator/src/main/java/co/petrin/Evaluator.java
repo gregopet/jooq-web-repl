@@ -24,10 +24,7 @@ public class Evaluator {
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         try (var js = buildJShell()) {
 
-            // imports - we shall make them configurable & browsable one day!
-            js.eval("import org.jooq.impl.DSL;");
-            js.eval("import static org.jooq.impl.DSL.*;");
-            js.eval("import static sakila.Tables.*;");
+            addImports(js);
 
             // jooq connection
             var connectionEvent = runSingleSnippet(js, String.format(
@@ -69,6 +66,24 @@ public class Evaluator {
                 default:
                     throw new IllegalStateException("This state was not programmed for, blame the programmer!");
             }
+        }
+    }
+
+    /**
+     * Returns code completion suggestions.
+     * @param request The script we wanted completion for.
+     */
+    public SuggestionResponse suggest(EvaluationRequest request) {
+        if (request.getCursorPosition() == null) {
+            throw new IllegalArgumentException("Cursor position required to trigger completion!");
+        }
+
+        try (var js = buildJShell()) {
+            addImports(js);
+            int[] anchor = new int[1];
+            var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
+            System.out.println("From " + request.getCursorPosition() + " to " + anchor[0]);
+            return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
         }
     }
 
@@ -138,6 +153,17 @@ public class Evaluator {
         .executionEngine("local") //https://docs.oracle.com/javase/9/docs/api/jdk/jshell/spi/package-summary.html
         .out(System.out) // wrong, right?
         .build();
+    }
+
+    /**
+     * Add the imports required for the code to run.
+     * @param js The JShell instance.
+     */
+    private static void addImports(JShell js) {
+        // we shall make these configurable & browsable one day!
+        js.eval("import org.jooq.impl.DSL;");
+        js.eval("import static org.jooq.impl.DSL.*;");
+        js.eval("import static sakila.Tables.*;");
     }
 
     /** Escapes and quotes a Java string, unless it was null in which case a simple null is emitted */

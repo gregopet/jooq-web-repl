@@ -54,6 +54,11 @@ public class ScriptHandler {
                 .orElseThrow(()-> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
             eval(db, rc);
         });
+        router.postWithRegex("/([0-9]{1,3})/suggest").handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
+            var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
+            var suggestions = new Evaluator().suggest(request);
+            rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(suggestions));
+        });
         return router;
     }
 

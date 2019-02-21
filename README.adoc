@@ -1,5 +1,37 @@
 = Online jOOQ REPL
 
+== Quickstart with Docker Compose
+
+Clone this directory to a machine that has Docker installed & running and 
+run this command in the project's root directory:
+
+----
+docker-compose up 
+----
+
+(when you're running this for the first time, it may take a while while
+Docker and Gradle download all the dependencies)
+
+Then, point your browser to http://localhost:8000/ and try executing some
+queries. Try `jooq.selectFrom(FILM).fetch()` for example. Take a look at
+https://dev.mysql.com/doc/sakila/en/sakila-structure.html to get more ideas
+about queries to try. Look up jOOQ's documentation at 
+https://www.jooq.org/doc/latest/manual-single-page if you can't get a query
+to work.
+
+You can also try playing with the `docker-compose.yaml` file if you want to
+add additional RDBMS engines - MySQL should be simple. As for supporting
+database schemas other than Sakila, you will have to provide your own jOOQ
+model (imports will also not work for your model yet unless you modify some
+trivial source code - I'll probably make this easier in the near future
+because I need it as well..).
+
+Note that if you can't get your changes to show up despite restarting
+docker-compose, the nuclear approach seems to be `docker-compose up -V 
+--build`.
+
+
+
 == Defining the available databases
 
 The application must be told about the databases at its disposal using

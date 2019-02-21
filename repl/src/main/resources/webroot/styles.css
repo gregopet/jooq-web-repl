@@ -38,8 +38,17 @@ html, body, .full-height {
 
 
 
+/* The two-vertical-panes system */
+#panes-container {
+    display: flex;
+    flex-direction: column;
+}
+#panes-container > .pane {
+    flex-grow: 1;
+    flex-basis: 50%;
+}
+
 #results-pane {
     background-color: #eee;
-    margin-right: 15px;
     scroll: auto;
 }

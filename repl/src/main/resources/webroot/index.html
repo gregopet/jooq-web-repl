@@ -11,28 +11,30 @@
     <body>
         <div id="app-container" class="container-fluid full-height">
 
-            <div class="row full-height">
+            <div class="top-bar">
+                <h1>jOOQ REPL</h1>
 
-                <div class="top-bar">
-                    <h1>jOOQ REPL</h1>
+                <div id="database-select-wrapper">
+                    <label for="database-select">Database:</label>
+                    <select id="database-select">
+                        <option placeholder>..please wait..</option>
+                    </select>
+                </div>
+            </div>
 
-                    <div id="database-select-wrapper">
-                        <label for="database-select">Database:</label>
-                        <select id="database-select">
-                            <option placeholder>..please wait..</option>
-                        </select>
-                    </div>
+            <div id="panes-container" class="full-height">
+
+                <div id="query-pane" class="pane position-relative">
+                    <textarea id="script-content" class="form-control position-absolute" style="top:0; bottom: 0" autofocus placeholder="jooq.selectFrom(TABLE).fetch()"></textarea>
                 </div>
 
-                <div id="query-pane" class="col full-height">
-                    <div class="form-group full-height position-relative">
-                        <textarea id="script-content" class="form-control position-absolute" style="top:0; bottom: 2em" autofocus placeholder="jooq.selectFrom(TABLE).fetch()"></textarea>
-                        <button id="submit-button" class="btn btn-primary position-absolute" style="bottom: 0; width: 100%">Submit</button>
-                    </div>
+                <div>
+                    <button id="submit-button" class="btn btn-block btn-primary">Submit</button>
                 </div>
 
-                <pre id="results-pane" class="col full-height mb-0">
+                <pre id="results-pane" class="pane">
                 </pre>
+
             </div>
         </div>
     </body>

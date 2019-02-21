@@ -45,7 +45,14 @@ public class Evaluator {
             }
 
             long startTime = System.currentTimeMillis();
-            var event = runSingleSnippet(js, request.getScript());
+
+            final SnippetEvent event;
+            try {
+                event = runSingleSnippet(js, request.getScript());
+            } catch (Throwable t) {
+                return jshellError(t);
+            }
+
             switch (event.status()) {
                 case VALID:
                     if (event.exception() != null) {

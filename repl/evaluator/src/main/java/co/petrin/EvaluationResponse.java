@@ -1,6 +1,8 @@
 package co.petrin;
 
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 /**
  * The result of an evaluation.
  */
@@ -18,6 +20,10 @@ public class EvaluationResponse {
 
     public static EvaluationResponse setupError(String error) {
         return new EvaluationResponse(error, true, null);
+    }
+
+    public static EvaluationResponse jshellError(Throwable t) {
+        return new EvaluationResponse("Script evaluator failed!\n" + ExceptionUtils.getMessage(t) + " " + ExceptionUtils.getStackTrace(t), true, null);
     }
 
     public static EvaluationResponse parseError(String error) { return new EvaluationResponse(error, true, null); }

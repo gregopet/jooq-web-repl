@@ -55,7 +55,7 @@ public class Evaluator {
                             return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
                         }
                     } else {
-                        return success(validSnippetValue(js, event), startTime);
+                        return success(StringUtils.defaultString(event.value(), "<no output>"), startTime);
                     }
                 case REJECTED:
                     return parseError(formatParsingError(js, event));
@@ -124,27 +124,6 @@ public class Evaluator {
             throw new IllegalStateException("Silly programmer didn't know he could get more than 1 event!");
         }
         return events.get(0);
-    }
-
-    /** Determines what value to return back to the user to provide feedback */
-    private static String validSnippetValue(JShell js, SnippetEvent userSnippet) {
-        if (userSnippet.value() != null) {
-            return userSnippet.value();
-        }
-
-        if (userSnippet.snippet() instanceof VarSnippet) {
-            // user finished off by defining a variable; let's display that variable to them!
-            var lastVar = js.variables().reduce((first, last) -> last).orElse(null);
-            if (lastVar != null) {
-                var output = runSingleSnippet(js, lastVar.name());
-                if (output != null && output.value() != null) {
-                    return output.value();
-                }
-
-            }
-        }
-
-        return StringUtils.defaultString(userSnippet.value(), "<no result>");
     }
 
     private static JShell buildJShell() {

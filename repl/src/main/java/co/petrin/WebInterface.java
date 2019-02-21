@@ -3,6 +3,7 @@ package co.petrin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -41,7 +42,10 @@ public class WebInterface {
         }
 
         vertx
-        .createHttpServer()
+        .createHttpServer(
+            new HttpServerOptions()
+                .setCompressionSupported(true) // this might actually be harmful when fronting with a good native server?
+        )
         .requestHandler(router)
         .listen(port, handler -> {
             if (handler.succeeded()) {

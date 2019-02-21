@@ -45,11 +45,10 @@ const APP = (function() {
         .then( resp => {
             showLoader(false);
             submitButton.disabled = false;
-
+            return resp.json();
         })
-        .then( result => {
-            document.querySelector("#results-pane").innerText = result.output
-        });
+        .then( result => document.querySelector("#results-pane").innerText = result.output)
+        .catch ( err => document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err);
     }
 
     function showLoader(show) {

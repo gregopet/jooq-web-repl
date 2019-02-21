@@ -41,15 +41,15 @@ const APP = (function() {
         showLoader(true);
         fetch("/databases/" + getSelectedDatabase() + "/eval", {
             method: 'POST',
-            body: document.querySelector('#script-content').value
+            body: JSON.stringify({ script: document.querySelector('#script-content').value })
         })
         .then( resp => {
             showLoader(false);
             executionInProgress = false;
-            return resp.text();
+            return resp.json();
         })
-        .then( txt => {
-            document.querySelector("#results-pane").innerText = txt
+        .then( result => {
+            document.querySelector("#results-pane").innerText = result.output
         });
     }
 

@@ -1,6 +1,7 @@
 package co.petrin;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -58,7 +59,9 @@ public class ScriptHandler {
 
     private void eval(Database db, RoutingContext ctx) {
         Evaluator evaluator = new Evaluator();
-        ctx.response().end(evaluator.evaluate(db, ctx.getBodyAsString()));
+        var request = Json.decodeValue(ctx.getBody(), EvaluationRequest.class);
+        var result = evaluator.evaluate(db, request);
+        ctx.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(result));
     }
 
     private void listDatabases(RoutingContext ctx) {

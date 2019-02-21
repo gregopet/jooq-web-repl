@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.text.StringEscapeUtils;
+import static co.petrin.EvaluationResponse.*;
 
 /**
  * A class that evaluates user submitted scripts with some pre-prepared variables, such as
@@ -17,10 +18,10 @@ public class Evaluator {
     /**
      * Builds a new evaluator and evaluates the script.
      * @param db The database to run the script against
-     * @param scriptToEvaluate The script to evaluate
+     * @param request The script to evaluate
      * @return The evaluation result
      */
-    public String evaluate(Database db, String scriptToEvaluate) {
+    public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         try (var js = buildJShell()) {
 
             // imports - we shall make them configurable & browsable one day!
@@ -37,26 +38,27 @@ public class Evaluator {
             ));
 
             if (connectionEvent.status() != Snippet.Status.VALID) {
-                return "Error creating a database object:\n" + formatParsingError(js, connectionEvent);
+                return setupError("Error creating a database object:\n" + formatParsingError(js, connectionEvent));
             }
             else if (connectionEvent.exception() != null) {
-                return "An exception occured connecting to the database: " + connectionEvent.exception().getMessage();
+                return setupError("An exception occured connecting to the database: " + connectionEvent.exception().getMessage());
             }
 
-            var event = runSingleSnippet(js, scriptToEvaluate);
+            long startTime = System.currentTimeMillis();
+            var event = runSingleSnippet(js, request.getScript());
             switch (event.status()) {
                 case VALID:
                     if (event.exception() != null) {
                         if (event.exception() instanceof EvalException) {
-                            return ((EvalException) event.exception()).getExceptionClassName() + ": " + event.exception().getMessage();
+                            return error(((EvalException) event.exception()).getExceptionClassName() + ": " + event.exception().getMessage(), startTime);
                         } else {
-                            return event.exception().getClass().getName() + ": " + event.exception().getMessage();
+                            return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
                         }
                     } else {
-                        return validSnippetValue(js, event);
+                        return success(validSnippetValue(js, event), startTime);
                     }
                 case REJECTED:
-                    return formatParsingError(js, event);
+                    return parseError(formatParsingError(js, event));
                 default:
                     throw new IllegalStateException("This state was not programmed for, blame the programmer!");
             }

@@ -5,7 +5,7 @@ html, body, .full-height {
 
 #app-container {
     /* Some margin, allow absolutely posistioned elements to go in there */
-    padding-top: 65px; padding-bottom: 20px;
+    padding-top: 65px;
     position: relative;
 }
 

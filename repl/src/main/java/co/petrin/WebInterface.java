@@ -9,6 +9,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,14 +32,22 @@ public class WebInterface {
                 .setFilesReadOnly(false).setWebRoot("src/main/resources/webroot") // allow dev reloading
         );
 
+        final int port;
+        String portConfig = System.getenv("REPL_PORT");
+        if (StringUtils.isNumeric(portConfig)) {
+            port = Integer.parseInt(portConfig);
+        } else {
+            port = 8080;
+        }
+
         vertx
         .createHttpServer()
         .requestHandler(router)
-        .listen(8080, handler -> {
+        .listen(port, handler -> {
             if (handler.succeeded()) {
-                LOG.info("Server running on port 8080");
+                LOG.info("Server running on port " + port);
             } else {
-                LOG.error("Failed to listen on port 8080");
+                LOG.error("Failed to listen on port " + port);
             }
         });
     }

@@ -58,3 +58,8 @@ For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 
 `DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER` and
 `DATABASE_OLD_POSTGRES_PASSWORD`.
+
+=== Other configuration
+
+The port on which the web REPL will run is 8080 by default but it can be changed
+via the `REPL_PORT` environment variable.

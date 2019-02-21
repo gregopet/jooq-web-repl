@@ -32,7 +32,14 @@ docker-compose, the nuclear approach seems to be `docker-compose up -V
 
 
 
-== Defining the available databases
+== The web executor
+
+The web executor accepts Java scripts and makes it easy to run jOOQ scripts
+on them. A `jooq` variable is available for use that contains a connected
+https://www.jooq.org/doc/3.11/manual/sql-building/dsl-context[DSLContext].
+
+
+=== Defining the available databases
 
 The application must be told about the databases at its disposal using
 environment variables. On startup, the application will look for any 

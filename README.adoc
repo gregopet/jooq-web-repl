@@ -2,7 +2,7 @@
 
 == Quickstart with Docker Compose
 
-Clone this directory to a machine that has Docker installed & running and 
+Clone this directory to a machine that has Docker Compose installed and 
 run this command in the project's root directory:
 
 ----

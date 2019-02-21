@@ -39,8 +39,6 @@ run {
         DATABASE_POSTGRES_DESCRIPTION : 'Latest postgres database image',
         DATABASE_POSTGRES_URL : 'jdbc:postgresql://localhost:5432/sakila',
         DATABASE_POSTGRES_USER : 'postgres',
-        DATABASE_POSTGRES_PASSWORD : '',
-        DATABASE_POSTGRES_DRIVER : 'org.postgresql.Driver',
-        DATABASE_POSTGRES_SQLDIALECT : 'POSTGRES_10'
+        DATABASE_POSTGRES_PASSWORD : ''
   ])
 }

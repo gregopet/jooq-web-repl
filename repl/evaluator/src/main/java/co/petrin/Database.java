@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.jooq.Constants;
-import org.jooq.SQLDialect;
 
 /** A database connection descriptor */
 public class Database {
@@ -25,35 +24,15 @@ public class Database {
     /** Password to use when connecting */
     public final String password;
 
-    /** Class name of the JDBC driver*/
-    public final String driver;
-
-    /** jOOQ's SQL dialect to initialize a jOOQ context with. */
-    public final org.jooq.SQLDialect sqlDialect;
-
     private static final String CONFIGURATION_PREFIX = "DATABASE_";
     private static final AtomicInteger idSequence = new AtomicInteger();
 
-    public Database(String connectionString, String description, String user, String password, String driver, String sqlDialect) {
+    public Database(String connectionString, String description, String user, String password) {
         this.id = idSequence.getAndIncrement();
         this.connectionString = connectionString;
         this.description = description;
         this.user = user;
         this.password = password;
-        this.driver = driver;
-        if (sqlDialect != null && !sqlDialect.isBlank()) {
-            this.sqlDialect = SQLDialect.valueOf(sqlDialect);
-        } else {
-            this.sqlDialect = SQLDialect.DEFAULT;
-        }
-        if (driver != null && !driver.isBlank()) {
-            try {
-                Class.forName(driver);
-            } catch (ClassNotFoundException ex) {
-                // transform exception or be unable to use lambdas
-                throw new RuntimeException(ex);
-            }
-        }
     }
 
     /** Parse available databases from the environment settings */
@@ -68,9 +47,7 @@ public class Database {
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_URL"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_DESCRIPTION"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_USER"),
-                System.getenv(CONFIGURATION_PREFIX + dbName + "_PASSWORD"),
-                System.getenv(CONFIGURATION_PREFIX + dbName + "_DRIVER"),
-                System.getenv(CONFIGURATION_PREFIX + dbName + "_SQLDIALECT")
+                System.getenv(CONFIGURATION_PREFIX + dbName + "_PASSWORD")
             ))
             .collect(Collectors.toList());
     }
@@ -88,12 +65,6 @@ public class Database {
         } else {
             sb.append("Unnamed database");
         }
-        if (driver != null && !driver.isBlank()) {
-            sb.append(", ").append(driver).append(" ");
-        } else {
-            sb.append(" ");
-        }
-        sb.append("(").append(sqlDialect.name()).append(")");
         sb.append(" @ ").append(connectionString);
         return sb.toString();
     }

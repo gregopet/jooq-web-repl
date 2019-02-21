@@ -24,5 +24,3 @@ services:
             - DATABASE_POSTGRES_URL=jdbc:postgresql://postgres:5432/sakila
             - DATABASE_POSTGRES_USER=postgres
             - DATABASE_POSTGRES_PASSWORD=
-            - DATABASE_POSTGRES_DRIVER=org.postgresql.Driver
-            - DATABASE_POSTGRES_SQLDIALECT=POSTGRES_10

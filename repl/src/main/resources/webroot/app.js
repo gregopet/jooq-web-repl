@@ -1,9 +1,9 @@
 const APP = (function() {
 
-    let executionInProgress = false;
+    const submitButton = document.querySelector('#submit-button');
 
     function init() {
-        document.querySelector('#submit-button').addEventListener("click", eval);
+        submitButton.addEventListener("click", eval);
         fetchDatabases();
         catchGlobalShortcuts();
     }
@@ -35,8 +35,7 @@ const APP = (function() {
     }
 
     function eval() {
-        if (executionInProgress) return;
-        executionInProgress = true;
+        submitButton.disabled = true;
 
         showLoader(true);
         fetch("/databases/" + getSelectedDatabase() + "/eval", {
@@ -45,8 +44,8 @@ const APP = (function() {
         })
         .then( resp => {
             showLoader(false);
-            executionInProgress = false;
-            return resp.json();
+            submitButton.disabled = false;
+
         })
         .then( result => {
             document.querySelector("#results-pane").innerText = result.output

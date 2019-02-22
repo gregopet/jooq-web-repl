@@ -82,7 +82,6 @@ public class Evaluator {
             addImports(js);
             int[] anchor = new int[1];
             var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
-            System.out.println("From " + request.getCursorPosition() + " to " + anchor[0]);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
         }
     }

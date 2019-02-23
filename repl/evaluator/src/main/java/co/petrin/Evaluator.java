@@ -15,6 +15,8 @@ import static co.petrin.EvaluationResponse.*;
  */
 public class Evaluator {
 
+    private static final String NO_OUTPUT_TEXT = "The execution finished with without results.";
+
     /**
      * Builds a new evaluator and evaluates the script.
      * @param db The database to run the script against
@@ -50,6 +52,10 @@ public class Evaluator {
                 return jshellError(t);
             }
 
+            if (event == null) {
+                return success(NO_OUTPUT_TEXT, startTime);
+            }
+
             switch (event.status()) {
                 case VALID:
                     if (event.exception() != null) {
@@ -59,7 +65,7 @@ public class Evaluator {
                             return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
                         }
                     } else {
-                        return success(StringUtils.defaultString(event.value(), "<no output>"), startTime);
+                        return success(StringUtils.defaultString(event.value(), NO_OUTPUT_TEXT), startTime);
                     }
                 case REJECTED:
                     return parseError(formatParsingError(js, event));

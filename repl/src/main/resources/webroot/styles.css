@@ -37,7 +37,6 @@ html, body, .full-height {
 }
 
 
-
 /* The two-vertical-panes system */
 #panes-container {
     display: flex;
@@ -47,8 +46,16 @@ html, body, .full-height {
     flex-grow: 1;
     flex-basis: 50%;
 }
+
+/* CodeMirror styling */
 #panes-container .CodeMirror { 
 	height: 100%;
+}
+ .CodeMirror-hints .matches-type-false {
+		color: #666 !important;
+}
+.CodeMirror-hints .CodeMirror-hint-active.matches-type-false {
+	color: white !important;
 }
 
 

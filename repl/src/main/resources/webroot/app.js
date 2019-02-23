@@ -2,23 +2,20 @@ const APP = (function() {
 
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
-	let editor = null; // CodeMirror instance
+    let editor = null; // CodeMirror instance
 
     function init() {
         submitButton.addEventListener("click", eval);
-        completeButton.addEventListener("click", suggest);
+        completeButton.addEventListener("click", () => editor.showHint());
         fetchDatabases();
         catchGlobalShortcuts();
-		initCodemirror();
+        initCodemirror();
     }
 
     function catchGlobalShortcuts() {
         document.addEventListener("keydown", ev => {
             if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "Enter") {
                 eval();
-            }
-            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == " ") {
-                suggest();
             }
         })
     }
@@ -59,18 +56,42 @@ const APP = (function() {
     }
     
     /**
-     * Invoke suggestion mechanism.
+     * Invoke suggestion mechanism. Returns the data CodeMirror needs to display suggestions.
      */
     function suggest() {
-        fetch("/databases/" + getSelectedDatabase() + "/suggest", {
+        return fetch("/databases/" + getSelectedDatabase() + "/suggest", {
             method: 'POST',
             body: JSON.stringify(getSnippet())
         })
-        .then( resp => {
-            return resp.json();
-        })
-        .then( result => console.log(result))
-        .catch ( err => document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err);
+        .then( resp => resp.json() )
+        .then(mapSuggestions )
+        .catch ( err => { document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err});
+    }
+    
+    /** Maps the returned suggestions to a format our editor can understand */
+    function mapSuggestions(result) {
+        
+        // Remove duplicates and display non-matching suggestions last (suggestions come pre-sorted alphabetically)
+        let lastAdded = undefined;
+        let matchType = [];
+        let dontMatchType = [];
+        result.suggestions.forEach( sugg => {
+            if (sugg.continuation !== lastAdded) {
+                lastAdded = sugg.continuation
+            
+                if (sugg.matchesType) {
+                    matchType.push({ text: sugg.continuation });
+                } else {
+                    dontMatchType.push({ text: sugg.continuation, className: 'matches-type-false' });
+                }
+            }
+        });
+        
+        return {
+                from: editor.posFromIndex(result.anchor),
+                to: editor.posFromIndex(result.cursor),
+                list: matchType.concat(dontMatchType)
+        }
     }
     
     /**
@@ -90,10 +111,15 @@ const APP = (function() {
     }
     
     function initCodemirror() {
-		editor = CodeMirror.fromTextArea(document.querySelector('#script-content'), {
-			lineNumbers: true,
-			mode: "clike"
-		});
+        editor = CodeMirror.fromTextArea(document.querySelector('#script-content'), {
+            lineNumbers: true,
+            mode: { name: "clike" },
+            extraKeys: {"Ctrl-Space": "autocomplete"},
+            hintOptions: {
+                hint: suggest,
+                completeSingle: false
+            }
+        });
     }
     
     return {

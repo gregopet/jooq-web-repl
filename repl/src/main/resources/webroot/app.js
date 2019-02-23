@@ -1,14 +1,15 @@
 const APP = (function() {
 
-    const scriptContent = document.querySelector('#script-content');
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
+	let editor = null; // CodeMirror instance
 
     function init() {
         submitButton.addEventListener("click", eval);
         completeButton.addEventListener("click", suggest);
         fetchDatabases();
         catchGlobalShortcuts();
+		initCodemirror();
     }
 
     function catchGlobalShortcuts() {
@@ -77,8 +78,8 @@ const APP = (function() {
     */
     function getSnippet() {
         return {
-            script: scriptContent.value,
-            cursorPosition:  scriptContent.selectionEnd
+            script: editor.getValue(),
+            cursorPosition:  editor.indexFromPos(editor.getCursor())
         }
     }
     
@@ -86,6 +87,13 @@ const APP = (function() {
         if (show) {
             document.querySelector("#results-pane").innerHTML = "... EXECUTING ...";
         }
+    }
+    
+    function initCodemirror() {
+		editor = CodeMirror.fromTextArea(document.querySelector('#script-content'), {
+			lineNumbers: true,
+			mode: "clike"
+		});
     }
     
     return {

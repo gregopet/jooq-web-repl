@@ -47,6 +47,11 @@ html, body, .full-height {
     flex-grow: 1;
     flex-basis: 50%;
 }
+#panes-container .CodeMirror { 
+	height: 100%;
+}
+
+
 
 #results-pane {
     background-color: #eee;

@@ -44,7 +44,6 @@ html, body, .full-height {
 }
 #panes-container > .pane {
     flex-grow: 1;
-    flex-basis: 50%;
 }
 #splitter {
     flex-grow: 0;
@@ -112,7 +111,7 @@ html, body, .full-height {
 	overflow: auto;
 }
 
-
+/* Results pane styling */
 #results-pane {
     background-color: #f7f7f7;
     scroll: auto;

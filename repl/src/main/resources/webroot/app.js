@@ -1,5 +1,6 @@
 const APP = (function() {
 
+    const splitter = document.querySelector("#splitter");
     const resultsPane = document.querySelector("#results-pane");
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
@@ -24,6 +25,24 @@ const APP = (function() {
         fetchDatabases();
         catchGlobalShortcuts();
         initCodemirror();
+        initResizer();
+    }
+
+    function initResizer() {
+        var isMouseDown = false;
+        splitter.addEventListener("mousedown", () => isMouseDown = true);
+        document.addEventListener("mouseup", () => isMouseDown = false);
+        document.addEventListener("mousemove", (ev) => {
+            if (ev && isMouseDown && ev.offsetY) {
+                var dist = ev.clientY - resultsPane.offsetTop;
+                console.log("Height was", resultsPane.offsetHeight, "reducing by", dist);
+                resultsPane.style['flex-basis'] = "" + (resultsPane.offsetHeight - dist) + "px";
+                resultsPane.style['flex-grow'] = "0";
+
+                console.log("New height", "" + (resultsPane.offsetHeight - dist) + "px");
+                if (ev.preventDefault) ev.preventDefault();
+            }
+        });
     }
 
     function catchGlobalShortcuts() {

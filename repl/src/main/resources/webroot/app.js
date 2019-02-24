@@ -1,8 +1,11 @@
 const APP = (function() {
 
+    const resultsPane = document.querySelector("#results-pane");
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
     const javadocButton = document.querySelector('#javadoc-button');
+    const helpToggleButton = document.querySelector('#command-area-toggle');
+    const commandArea = document.querySelector('.command-area');
     const javadocDialog = document.querySelector('#documentation-dialog');
     const javadocDialogSignature = document.querySelector('#documentation-dialog-signature');
     const javadocDialogDocumentation = document.querySelector('#documentation-dialog-documentation');
@@ -17,6 +20,7 @@ const APP = (function() {
         submitButton.addEventListener("click", eval);
         completeButton.addEventListener("click", () => editor.showHint());
         javadocButton.addEventListener("click",  javadoc);
+        helpToggleButton.addEventListener("click", toggleCommandArea);
         fetchDatabases();
         catchGlobalShortcuts();
         initCodemirror();
@@ -73,8 +77,14 @@ const APP = (function() {
             submitButton.disabled = false;
             return resp.json();
         })
-        .then( result => document.querySelector("#results-pane").innerText = result.output)
-        .catch ( err => document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err);
+        .then( result => {
+            resultsPane.innerText = result.output;
+            resultsPane.classList.toggle('completed-with-error', result.error)
+        })
+        .catch ( err => {
+            document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err;
+            resultsPane.classList.add('completed-with-error')
+        })
     }
     
     /** Fetches javadocs for the current code position and displays them, storing unopened ones on the DOM element */
@@ -194,6 +204,15 @@ const APP = (function() {
                 completeSingle: false
             }
         });
+    }
+
+    /** Turns the buttons & hints box on/off */
+    function toggleCommandArea() {
+        if (commandArea.style.display != 'none') {
+            commandArea.style.display = "none";
+        } else {
+            commandArea.style.display = "block";
+        }
     }
     
     return {

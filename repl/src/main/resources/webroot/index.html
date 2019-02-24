@@ -25,19 +25,31 @@
                         <option placeholder>..please wait..</option>
                     </select>
                 </div>
+
+                <button id="command-area-toggle" class="ml-3 btn btn-dark btn-sm">Toggle commands</button>
             </div>
 
             <div id="panes-container" class="full-height">
 
                 <div id="query-pane" class="pane position-relative">
-                    <textarea id="script-content" class="form-control position-absolute" style="top:0; bottom: 0" autofocus placeholder="jooq.selectFrom(ADDRESS).fetch()"></textarea>
+                    <textarea id="script-content" class="form-control position-absolute" autofocus placeholder="jooq.selectFrom(ADDRESS).fetch()"></textarea>
+                    <div class="command-area card">
+                        <div class="card-header">Commands</div>
+                        <div class="card-body">
+                            <p>
+                                <button id="submit-button" class="btn btn-sm btn-outline-dark"><span>Submit</span><kbd>Ctrl + Enter</kbd></button>
+                            </p>
+                            <p>
+                                <button id="complete-button" class="btn btn-sm btn-outline-dark"><span>Completion</span><kbd>Ctrl + Space</kbd></button>
+                            </p>
+                            <p>
+                                <button id="javadoc-button" class="btn btn-sm btn-outline-dark"><span>Docs</span><kbd class="shortcut">Ctrl + Q</kbd></button>
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <button id="submit-button" class="btn btn-primary">Submit</button>
-                    <button id="complete-button" class="btn btn-default">Invoke completion</button>
-                    <button id="javadoc-button" class="btn btn-default">Fetch javadocs for classes & methods</button>
-                </div>
+                <div id="splitter"><div></div></div>
 
                 <pre id="results-pane" class="pane">
                 </pre>

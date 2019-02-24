@@ -59,6 +59,11 @@ public class ScriptHandler {
             var suggestions = new Evaluator().suggest(request);
             rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(suggestions));
         });
+        router.postWithRegex("/([0-9]{1,3})/javadoc").handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
+            var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
+            var suggestions = new Evaluator().javadoc(request);
+            rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(suggestions));
+        });
         return router;
     }
 

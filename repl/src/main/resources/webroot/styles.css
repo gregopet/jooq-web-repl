@@ -47,6 +47,14 @@ html, body, .full-height {
     flex-basis: 50%;
 }
 
+/* Hints dialog */
+#documentation-dialog-signature {
+    /** Flex instead of float: right, much more robust */
+    width: 100%;
+    justify-content: space-between;
+    display: flex;
+}
+
 /* CodeMirror styling */
 #panes-container .CodeMirror { 
 	height: 100%;
@@ -57,7 +65,13 @@ html, body, .full-height {
 .CodeMirror-hints .CodeMirror-hint-active.matches-type-false {
 	color: white !important;
 }
-
+.modal-body {
+	max-height: 85vh;
+	max-height: 700px 
+}
+#documentation-dialog-documentation {
+	overflow: auto;
+}
 
 
 #results-pane {

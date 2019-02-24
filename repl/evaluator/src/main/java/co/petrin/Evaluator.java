@@ -92,6 +92,30 @@ public class Evaluator {
         }
     }
 
+
+    /**
+     * Returns javadoc for the selected code.
+     * @param request The script we want javadocs for.
+     */
+    public List<DocumentationResponse> javadoc(EvaluationRequest request) {
+        if (request.getCursorPosition() == null) {
+            throw new IllegalArgumentException("Cursor position required to trigger completion!");
+        }
+        try (var js = buildJShell()) {
+            addImports(js);
+            var javadocs = js.sourceCodeAnalysis().documentation(request.getScript(), request.getCursorPosition(), true);
+            if (javadocs.isEmpty()) {
+                // try to get the documentation for the class the expression had resolved to
+                var resolvedClass = js.sourceCodeAnalysis().analyzeType(request.getScript(), request.getCursorPosition());
+                if (resolvedClass != null && !resolvedClass.isBlank()) {
+                    javadocs = js.sourceCodeAnalysis().documentation(resolvedClass, resolvedClass.length(), true);
+                }
+            }
+
+            return javadocs.stream().map(DocumentationResponse::new).collect(Collectors.toList());
+        }
+    }
+
     /**
      * Create a human readable error description.
      * @param event The event that took place

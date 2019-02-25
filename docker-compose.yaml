@@ -13,13 +13,14 @@ services:
         build:
             context: repl
         ports:
-            - 8000:8080
+            - 8000:8000
         links:
             - postgres
         volumes:
             - ./postgres/postgresql-9.1-901-1.jdbc4.jar:/usr/src/webapp/extra-libs/postgresql-9.1-901-1.jdbc4.jar
             - ./postgres/sakila-postgres.jar:/usr/src/webapp/extra-libs/sakila-postgres.jar
         environment:
+            - REPL_PORT=8000
             - DATABASE_POSTGRES_DESCRIPTION=Latest postgres database image
             - DATABASE_POSTGRES_URL=jdbc:postgresql://postgres:5432/sakila
             - DATABASE_POSTGRES_USER=postgres

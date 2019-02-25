@@ -49,7 +49,7 @@ public class WebInterface {
         .requestHandler(router)
         .listen(port, handler -> {
             if (handler.succeeded()) {
-                LOG.info("Server running on port " + port);
+                LOG.info("jOOQ REPL is running on port " + port);
             } else {
                 LOG.error("Failed to listen on port " + port);
             }

@@ -3,7 +3,7 @@ services:
     postgres:
         image: postgres
         ports: 
-            - 5432:5432
+            - "5432:5432"
         volumes:
             - ./postgres/disable-fsync.sh:/docker-entrypoint-initdb.d/1-disable-fsync.sh
             - ./postgres/sakila.sql:/docker-entrypoint-initdb.d/2-sakila.sql
@@ -13,7 +13,7 @@ services:
         build:
             context: repl
         ports:
-            - 8000:8000
+            - "8000:8000"
         links:
             - postgres
         volumes:

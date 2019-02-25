@@ -15,7 +15,7 @@ import static co.petrin.EvaluationResponse.*;
  */
 public class Evaluator {
 
-    private static final String NO_OUTPUT_TEXT = "The execution finished with without results.";
+    private static final String NO_OUTPUT_TEXT = "The execution finished without results.";
 
     /**
      * Builds a new evaluator and evaluates the script.
@@ -40,7 +40,7 @@ public class Evaluator {
                 return setupError("Error creating a database object:\n" + formatParsingError(js, connectionEvent));
             }
             else if (connectionEvent.exception() != null) {
-                return setupError("An exception occured connecting to the database: " + connectionEvent.exception().getMessage());
+                return setupError("An exception occurred connecting to the database: " + connectionEvent.exception().getMessage());
             }
 
             long startTime = System.currentTimeMillis();

@@ -4,7 +4,7 @@ import jdk.jshell.SourceCodeAnalysis;
 
 /**
  * Makes the source code documentation object in a bean so we don't have to muck with custom Jackson serializers.
- * TODO: much with custom Jackson serializers :P
+ * TODO: muck with custom Jackson serializers :P
  */
 public class DocumentationResponse {
     private String signature;

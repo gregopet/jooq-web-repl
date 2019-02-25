@@ -1,5 +1,10 @@
 = Online jOOQ REPL
 
+This project contains a web REPL to perform https://www.jooq.org/[jOOQ]
+queries. It is currently a work in progress so expect papercuts. I currently
+have no idea where this project is going, all the current features either serve
+my needs or were fun to program :P
+
 == Quickstart with Docker Compose
 
 Clone this directory to a machine that has Docker Compose installed and 

@@ -39,6 +39,7 @@ run {
         DATABASE_POSTGRES_DESCRIPTION : 'Latest postgres database image',
         DATABASE_POSTGRES_URL : 'jdbc:postgresql://localhost:5432/sakila',
         DATABASE_POSTGRES_USER : 'postgres',
-        DATABASE_POSTGRES_PASSWORD : ''
+        DATABASE_POSTGRES_PASSWORD : '',
+        DATABASE_POSTGRES_JOOQ_PACKAGE : 'sakila',
   ])
 }

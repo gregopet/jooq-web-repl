@@ -26,7 +26,7 @@ public class Evaluator {
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         try (var js = buildJShell()) {
 
-            addImports(js);
+            addImports(js, db);
 
             // jooq connection
             var connectionEvent = runSingleSnippet(js, String.format(
@@ -79,13 +79,13 @@ public class Evaluator {
      * Returns code completion suggestions.
      * @param request The script we wanted completion for.
      */
-    public SuggestionResponse suggest(EvaluationRequest request) {
+    public SuggestionResponse suggest(Database db, EvaluationRequest request) {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
         try (var js = buildJShell()) {
-            addImports(js);
+            addImports(js, db);
             int[] anchor = new int[1];
             var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
@@ -97,12 +97,12 @@ public class Evaluator {
      * Returns javadoc for the selected code.
      * @param request The script we want javadocs for.
      */
-    public List<DocumentationResponse> javadoc(EvaluationRequest request) {
+    public List<DocumentationResponse> javadoc(Database db, EvaluationRequest request) {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
         try (var js = buildJShell()) {
-            addImports(js);
+            addImports(js, db);
             var javadocs = js.sourceCodeAnalysis().documentation(request.getScript(), request.getCursorPosition(), true);
             if (javadocs.isEmpty()) {
                 // try to get the documentation for the class the expression had resolved to
@@ -188,11 +188,14 @@ public class Evaluator {
      * Add the imports required for the code to run.
      * @param js The JShell instance.
      */
-    private static void addImports(JShell js) {
+    private static void addImports(JShell js, Database db) {
         // we shall make these configurable & browsable one day!
         js.eval("import org.jooq.impl.DSL;");
         js.eval("import static org.jooq.impl.DSL.*;");
-        js.eval("import static sakila.Tables.*;");
+
+        if (db.jooqPackage != null) {
+            js.eval("import static " + db.jooqPackage + " .Tables.*;");
+        }
     }
 
     /** Escapes and quotes a Java string, unless it was null in which case a simple null is emitted */

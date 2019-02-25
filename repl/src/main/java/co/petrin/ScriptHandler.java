@@ -50,8 +50,8 @@ public class ScriptHandler {
         var router = Router.router(vertx);
         router.get().handler(this::listDatabases);
         registerDatabasePostHandler(router, "eval", (db, req) -> new Evaluator().evaluate(db, req));
-        registerDatabasePostHandler(router, "suggest", (db, req) -> new Evaluator().suggest(req));
-        registerDatabasePostHandler(router, "javadoc", (db, req) -> new Evaluator().javadoc(req));
+        registerDatabasePostHandler(router, "suggest", (db, req) -> new Evaluator().suggest(db, req));
+        registerDatabasePostHandler(router, "javadoc", (db, req) -> new Evaluator().javadoc(db, req));
         return router;
     }
 

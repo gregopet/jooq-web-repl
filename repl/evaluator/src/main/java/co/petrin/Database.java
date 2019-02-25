@@ -25,15 +25,19 @@ public class Database {
     /** Password to use when connecting */
     public final String password;
 
+    /** Name of the package for the jOOQ files generated for this database */
+    public final String jooqPackage;
+
     private static final String CONFIGURATION_PREFIX = "DATABASE_";
     private static final AtomicInteger idSequence = new AtomicInteger();
 
-    public Database(String connectionString, String description, String user, String password) {
+    public Database(String connectionString, String description, String user, String password, String jooqPackage) {
         this.id = idSequence.getAndIncrement();
         this.connectionString = connectionString;
         this.description = StringUtils.defaultIfNull(description, "");
         this.user = user;
         this.password = password;
+        this.jooqPackage = jooqPackage;
     }
 
     /** Parse available databases from the environment settings */
@@ -48,7 +52,8 @@ public class Database {
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_URL"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_DESCRIPTION"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_USER"),
-                System.getenv(CONFIGURATION_PREFIX + dbName + "_PASSWORD")
+                System.getenv(CONFIGURATION_PREFIX + dbName + "_PASSWORD"),
+                System.getenv(CONFIGURATION_PREFIX + dbName + "_JOOQ_PACKAGE")
             ))
             .collect(Collectors.toList());
     }

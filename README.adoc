@@ -53,11 +53,13 @@ but replacing `URL` with:
 DESCRIPTION:: the text to be shown for this connection on the user interface
 USER:: the username to use when connecting to this database
 PASSWORD:: the password to use when connecting to this database
+JOOQ_PACKAGE:: the package name used when generating the jOOQ model
 
 For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 
-`DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER` and
-`DATABASE_OLD_POSTGRES_PASSWORD`.
+`DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER`,
+`DATABASE_OLD_POSTGRES_PASSWORD` and 
+`DATABASE_OLD_POSTGRES_JOOQ_PACKAGE`.
 
 === Other configuration
 

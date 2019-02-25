@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.jooq.Constants;
+import org.jooq.tools.StringUtils;
 
 /** A database connection descriptor */
 public class Database {
@@ -30,7 +31,7 @@ public class Database {
     public Database(String connectionString, String description, String user, String password) {
         this.id = idSequence.getAndIncrement();
         this.connectionString = connectionString;
-        this.description = description;
+        this.description = StringUtils.defaultIfNull(description, "");
         this.user = user;
         this.password = password;
     }

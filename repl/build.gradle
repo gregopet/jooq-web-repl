@@ -1,3 +1,21 @@
+import org.jooq.codegen.GenerationTool
+import org.jooq.meta.jaxb.*
+import org.jooq.meta.*
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jooq:jooq-meta:$jooqVersion"
+        classpath "org.jooq:jooq-codegen:$jooqVersion"
+
+        // make extra-libs available to the build system as well
+        classpath fileTree(dir: 'extra-libs', includes: ['*.jar'])
+    }
+}
+
 plugins {
   id 'java'
   id 'application'
@@ -43,3 +61,50 @@ run {
         DATABASE_POSTGRES_JOOQ_PACKAGE : 'sakila',
   ])
 }
+
+task('runFromDocker', type: JavaExec, description: 'Main entry point for docker containers') {
+    main = mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    classpath += fileTree("$projectDir/extra-libs")
+}
+
+task('jooqModels', description: "Generate jOOQ schemas for any databases configured to do so") {
+
+    def databases = System.getenv()
+        .keySet()
+        .findAll { it.startsWith("DATABASE_") && it.endsWith("_URL") }
+        .collect { it.substring(9, it.length() - "_URL".length()) }
+        .findAll { System.getenv("DATABASE_${it}_BUILD_MODEL") }
+    onlyIf { databases.size() > 0 }
+
+    doLast {
+        databases.forEach { database ->
+            println "Generating jOOQ model for configuration $database"
+            def config = new org.jooq.meta.jaxb.Configuration()
+                .withJdbc(new Jdbc()
+                    .withUrl(System.getenv("DATABASE_${database}_URL"))
+                    .withUser(System.getenv("DATABASE_${database}_USER"))
+                    .withPassword(System.getenv("DATABASE_${database}_PASSWORD"))
+                    .withSchema("public")
+                )
+                .withGenerator(new Generator()
+                    .withGenerate(new Generate()
+                        .withDeprecated(false)
+                        .withValidationAnnotations(false)
+                        .withGeneratedAnnotation(false)
+                    )
+                    .withTarget(new Target()
+                        .withPackageName(System.getenv("DATABASE_${database}_JOOQ_PACKAGE"))
+                        .withDirectory("${projectDir}/evaluator/build/generated/java")
+                    )
+                    .withDatabase(new Database()
+                        //.withName('org.jooq.meta.postgres.PostgresDatabase')
+                        //.withIncludeExcludeColumns(true)
+                    )
+                )
+            GenerationTool.generate(config)
+        }
+    }
+}
+
+tasks.compileJava.dependsOn 'jooqModels'

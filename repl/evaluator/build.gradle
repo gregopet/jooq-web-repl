@@ -1,3 +1,9 @@
+sourceSets {
+    main {
+        java.srcDir "${projectDir}/build/generated/java"
+    }
+}
+
 dependencies {
     compile "org.jooq:jooq:$jooqVersion"
     compile "org.jooq:jooq-meta:$jooqVersion"

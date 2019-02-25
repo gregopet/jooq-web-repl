@@ -30,7 +30,11 @@ Note that if you can't get your changes to show up despite restarting
 docker-compose, the nuclear approach seems to be `docker-compose up -V 
 --build`.
 
+=== Can I bring my own database?
 
+Yes! Just read on - in fact, one of the main reasons I built this project was
+to have a jOOQ REPL I could easily attach to my projects using docker-compose
+(which I use to set up all my development databases these days).
 
 == The web executor
 
@@ -38,6 +42,31 @@ The web executor accepts Java scripts and makes it easy to run jOOQ scripts
 on them. A `jooq` variable is available for use that contains a connected
 https://www.jooq.org/doc/3.11/manual/sql-building/dsl-context[DSLContext].
 
+== Setup
+
+=== Generating the jOOQ model during build
+
+If you don't have a jOOQ model built yet, one can be built during startup. Set
+the `BUILD_MODEL` and `JOOQ_PACKAGE` properties (see the 
+<<_defining_the_available_databases,section>> about configuring databases)
+to have the build system make a jOOQ model for you. Also make sure that your
+database driver is on the classpath by copying its JAR to the `extra-libs`
+directory (you need it for running queries anyway). The generated jOOQ model
+will be automatically available for you and its artifacts statically imported
+into the REPL.
+
+You can even copy the generated model and use it in your own project, though
+you should know that it will be built with very generic settings. jOOQ's
+schema generator has a wide array of settings with which you can tweak your
+model and this project doesn't support them all (even the schema is currently
+locked to _public_). Consider Modifying the `build.gradle` file manually if
+you don't want to include the model generation into your own build.
+
+=== Extending the classpath
+
+The folder `extra-libs` will be loaded into the same classpath as the snippets.
+Your existing jOOQ models and database drivers are excellent candidates -
+copy their JARs into this folder or mount them in your docker-compose files.
 
 === Defining the available databases
 
@@ -47,13 +76,16 @@ environment variables of the form `DATABASE_<unique_database_key>_URL` (where
 `unique_database_key` is any valid environment variable name).
 
 This property must contain a connection string that can be used by JDBC. In
-addition to it several more properties can be defined using the same prefix
-but replacing `URL` with:
+addition to it several more properties can be defined using the same prefix but 
+replacing `URL` another key. These keys are:
 
+URL:: the connection string to use when connecting to the database
 DESCRIPTION:: the text to be shown for this connection on the user interface
 USER:: the username to use when connecting to this database
 PASSWORD:: the password to use when connecting to this database
-JOOQ_PACKAGE:: the package name used when generating the jOOQ model
+JOOQ_PACKAGE:: the package name used when generating the jOOQ model, it is also
+automatically static-imported into snippets run on that database
+BUILD_MODEL:: if present and not blank, schema generation will be performed
 
 For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 

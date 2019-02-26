@@ -55,6 +55,8 @@ The following environment variables are available:
 REPL_PORT:: The port to which the web application will bind, defaults to 8080
 REPL_COMPILE_DEPENDENCIES:: Whitespace-delimited list of Gradle package
 coordinates to use when building the REPL
+REPL_JOOQ_VERSION:: The jOOQ version to include into the REPL, defaults to
+3.11.9
 
 
 === Generating the jOOQ model during build

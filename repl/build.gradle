@@ -1,15 +1,17 @@
-import org.jooq.codegen.GenerationTool
-import org.jooq.meta.jaxb.*
-import org.jooq.meta.*
-
-
 buildscript {
+    project.ext.jooqVersion = System.getenv("REPL_JOOQ_VERSION") ?: "3.11.9"
     repositories {
         jcenter()
     }
     dependencies {
         classpath "org.jooq:jooq-meta:$jooqVersion"
         classpath "org.jooq:jooq-codegen:$jooqVersion"
+        
+        // required for codegen, at least under newer Java versions
+        // https://stackoverflow.com/questions/51916221/javax-xml-bind-jaxbexception-implementation-of-jaxb-api-has-not-been-found-on-mo
+        classpath('javax.xml.bind:jaxb-api:2.3.0')
+        classpath('javax.activation:activation:1.1')
+        classpath('org.glassfish.jaxb:jaxb-runtime:2.3.0')
 
         // make extra-libs available to the build system as well
         classpath fileTree(dir: 'extra-libs', includes: ['*.jar'])
@@ -74,35 +76,38 @@ task('jooqModels', description: "Generate jOOQ schemas for any databases configu
         .keySet()
         .findAll { it.startsWith("DATABASE_") && it.endsWith("_URL") }
         .collect { it.substring(9, it.length() - "_URL".length()) }
-        .findAll { System.getenv("DATABASE_${it}_BUILD_MODEL") }
+        .findAll { System.getenv("DATABASE_${it}_BUILD_MODEL") && System.getenv("DATABASE_${it}_JOOQ_PACKAGE") }
     onlyIf { databases.size() > 0 }
 
     doLast {
         databases.forEach { database ->
             println "Generating jOOQ model for configuration $database"
-            def config = new org.jooq.meta.jaxb.Configuration()
-                .withJdbc(new Jdbc()
-                    .withUrl(System.getenv("DATABASE_${database}_URL"))
-                    .withUser(System.getenv("DATABASE_${database}_USER"))
-                    .withPassword(System.getenv("DATABASE_${database}_PASSWORD"))
-                    .withSchema("public")
-                )
-                .withGenerator(new Generator()
-                    .withGenerate(new Generate()
-                        .withDeprecated(false)
-                        .withValidationAnnotations(false)
-                        .withGeneratedAnnotation(false)
-                    )
-                    .withTarget(new Target()
-                        .withPackageName(System.getenv("DATABASE_${database}_JOOQ_PACKAGE"))
-                        .withDirectory("${projectDir}/evaluator/build/generated/java")
-                    )
-                    .withDatabase(new Database()
-                        //.withName('org.jooq.meta.postgres.PostgresDatabase')
-                        //.withIncludeExcludeColumns(true)
-                    )
-                )
-            GenerationTool.generate(config)
+            def config = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <configuration xmlns="http://www.jooq.org/xsd/jooq-codegen-3.11.0.xsd">
+                    <!-- Configure the database connection here -->
+                    <jdbc>
+                        <url>${System.getenv("DATABASE_${database}_URL")}</url>
+                        <user>${System.getenv("DATABASE_${database}_USER")}</user>
+                        <password>${System.getenv("DATABASE_${database}_PASSWORD")}</password>
+                    </jdbc>
+
+                    <generator>
+                        <database>
+                            <includes>.*</includes>
+                            <inputSchema>public</inputSchema>
+                        </database>
+
+                        <target>
+                            <packageName>${System.getenv("DATABASE_${database}_JOOQ_PACKAGE")}</packageName>
+
+                            <!-- The destination directory of your generated classes -->
+                            <directory>${projectDir}/evaluator/build/generated/java</directory>
+                        </target>
+                    </generator>
+                </configuration>
+            """.stripIndent()
+            println "Configuration is:\n"+config
+            org.jooq.codegen.GenerationTool.generate(config)
         }
     }
 }

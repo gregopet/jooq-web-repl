@@ -53,6 +53,8 @@ https://www.jooq.org/doc/3.11/manual/sql-building/dsl-context[DSLContext].
 The following environment variables are available:
 
 REPL_PORT:: The port to which the web application will bind, defaults to 8080
+REPL_COMPILE_DEPENDENCIES:: Whitespace-delimited list of Gradle package
+coordinates to use when building the REPL
 
 
 === Generating the jOOQ model during build
@@ -90,6 +92,14 @@ directory-per-package convention. For example, to include source files from
 the `org.example.model` package only, the corresponding docker-compose volume
 instruction would be 
 `./src/main/java/org/example/model:/usr/src/webapp/extra-source-files/org/example/model`.
+
+=== Adding your own dependencies
+
+If your source files require additional dependencies, it is possible to include
+them using the `REPL_COMPILE_DEPENDENCIES` environment variable. It will
+separate individual dependencies by splitting them any whitespace character - 
+newlines work pretty good in a docker compose YAML file.
+
 
 == Database connections
 

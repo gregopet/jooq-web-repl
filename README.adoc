@@ -41,13 +41,19 @@ Yes! Just read on - in fact, one of the main reasons I built this project was
 to have a jOOQ REPL I could easily attach to my projects using docker-compose
 (which I use to set up all my development databases these days).
 
-== The web executor
+== The web REPL
 
 The web executor accepts Java scripts and makes it easy to run jOOQ scripts
 on them. A `jooq` variable is available for use that contains a connected
 https://www.jooq.org/doc/3.11/manual/sql-building/dsl-context[DSLContext].
 
-== Setup
+
+=== Setup
+
+The following environment variables are available:
+
+REPL_PORT:: The port to which the web application will bind, defaults to 8080
+
 
 === Generating the jOOQ model during build
 
@@ -73,7 +79,21 @@ The folder `extra-libs` will be loaded into the same classpath as the snippets.
 Your existing jOOQ models and database drivers are excellent candidates -
 copy their JARs into this folder or mount them in your docker-compose files.
 
-=== Defining the available databases
+=== Adding your own source files
+
+Any source files copied into the `extra-source-files` will be compiled together
+with the REPL source files. A good use of this would be to make your jOOQ
+source models available even if you don't compile them into a separate JAR.
+
+Make sure your directory structure continues to mirror Java's
+directory-per-package convention. For example, to include source files from
+the `org.example.model` package only, the corresponding docker-compose volume
+instruction would be 
+`./src/main/java/org/example/model:/usr/src/webapp/extra-source-files/org/example/model`.
+
+== Database connections
+
+=== Setup
 
 The application must be told about the databases at its disposal using
 environment variables. On startup, the application will look for any 
@@ -97,8 +117,3 @@ environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`,
 `DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER`,
 `DATABASE_OLD_POSTGRES_PASSWORD` and 
 `DATABASE_OLD_POSTGRES_JOOQ_PACKAGE`.
-
-=== Other configuration
-
-The port on which the web REPL will run is 8080 by default but it can be changed
-via the `REPL_PORT` environment variable.

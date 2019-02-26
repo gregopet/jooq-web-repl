@@ -1,6 +1,7 @@
 sourceSets {
     main {
         java.srcDir "${projectDir}/build/generated/java"
+        java.srcDir "${projectDir}/../extra-source-files"
     }
 }
 

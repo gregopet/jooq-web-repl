@@ -35,11 +35,8 @@ const APP = (function() {
         document.addEventListener("mousemove", (ev) => {
             if (ev && isMouseDown && ev.offsetY) {
                 var dist = ev.clientY - resultsPane.offsetTop;
-                console.log("Height was", resultsPane.offsetHeight, "reducing by", dist);
                 resultsPane.style['flex-basis'] = "" + (resultsPane.offsetHeight - dist) + "px";
                 resultsPane.style['flex-grow'] = "0";
-
-                console.log("New height", "" + (resultsPane.offsetHeight - dist) + "px");
                 if (ev.preventDefault) ev.preventDefault();
             }
         });

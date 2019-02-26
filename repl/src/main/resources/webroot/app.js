@@ -223,6 +223,9 @@ const APP = (function() {
                 completeSingle: false
             }
         });
+
+        // let layouting do its magic and then redraw the editor to avoid weird issues like an ultra-thin editor
+        window.setTimeout(() => editor.refresh(), 300);
     }
 
     /** Turns the buttons & hints box on/off */

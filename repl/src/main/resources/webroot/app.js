@@ -40,6 +40,12 @@ const APP = (function() {
                 if (ev.preventDefault) ev.preventDefault();
             }
         });
+	
+        // go back to "neutral" size when double clicking on the splitter
+        document.addEventListener("dblclick", (ev) => {
+            resultsPane.style['flex-basis'] = "";
+            resultsPane.style['flex-grow'] = "0";
+        });
     }
 
     function catchGlobalShortcuts() {

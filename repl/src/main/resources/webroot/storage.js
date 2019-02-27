@@ -37,15 +37,17 @@ const STORAGE = (function() {
         let snippetContent = APP.getEditor().getValue();
 
         let name = window.prompt("Enter a name for this snippet:");
-        let snippets = getSnippetsFromStorage();
-        let snippet = {
-            id: Math.floor(Math.random() * 100000000),
-            name: name,
-            content: snippetContent
+        if (name) {
+            let snippets = getSnippetsFromStorage();
+            let snippet = {
+                id: Math.floor(Math.random() * 100000000),
+                name: name,
+                content: snippetContent
+            }
+            snippets.push(snippet);
+            setSnippetsInStorage(snippets);
+            loadSnippets();
         }
-        snippets.push(snippet);
-        setSnippetsInStorage(snippets);
-        loadSnippets();
     }
 
     function renameCurrentSnippet() {
@@ -56,9 +58,11 @@ const STORAGE = (function() {
             let theSnippet = snippets.find( sn => '' + sn.id == active.attributes.snippetId )
             if (theSnippet) {
                 let newName = window.prompt("Enter a new name for this snippet:", theSnippet.name);
-                theSnippet.name = newName;
-                setSnippetsInStorage(snippets);
-                loadSnippets();
+                if (newName) {
+                    theSnippet.name = newName;
+                    setSnippetsInStorage(snippets);
+                    loadSnippets();
+                }
             }
         }
     }

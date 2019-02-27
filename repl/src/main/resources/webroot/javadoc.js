@@ -44,7 +44,7 @@ const JAVADOC = (function() {
             latestJavadocs = docs.map( (javadoc, idx) => {
                 const positionString = docs.length == 0 ? "" : " " + (idx + 1) + "/" + docs.length
                 return {
-                    title : "<span>" + javadoc.signature + "</span><span>" + positionString + "</span>",
+                    title : "<span>" + htmlEncode(javadoc.signature) + "</span><span>" + positionString + "</span>",
                     body : javadoc.documentation ? "<div>" + docs[idx].documentation + "</div>" : "<div>Detailed javadoc not available, possibly due to <a href='https://bugs.openjdk.java.net/browse/JDK-8186876'>JDK-8186876</a></div>"
                 }
             })

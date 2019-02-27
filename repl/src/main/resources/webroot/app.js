@@ -1,3 +1,9 @@
+// helper functions - also used by later scripts!
+function htmlEncode( html ) {
+    return document.createElement( 'a' ).appendChild(document.createTextNode( html ) ).parentNode.innerHTML;
+};
+
+
 const APP = (function() {
 
     const resultsPane = document.querySelector("#results-pane");

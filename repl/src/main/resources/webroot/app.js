@@ -53,7 +53,7 @@ const APP = (function() {
             if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "Enter") {
                 eval();
             }
-            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "q") {
+            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && (ev.key == "q" || ev.key == "Q")) {
                 javadoc();
             }
             if (ev.key == "Escape") {

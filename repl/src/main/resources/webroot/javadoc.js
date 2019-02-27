@@ -35,7 +35,7 @@ const JAVADOC = (function() {
 
     /** Fetches javadocs for the current code position and displays them, storing unopened ones on the DOM element */
     function javadoc() {
-        return fetch("/databases/" + APP.getSelectedDatabase() + "/javadoc", {
+        return fetch(APP.appendSelectedDatabasePrefix("/javadoc"), {
             method: 'POST',
             body: JSON.stringify(APP.getSnippet())
         })

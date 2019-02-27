@@ -12,6 +12,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +50,9 @@ public class ScriptHandler {
     public Router getRouter(Vertx vertx) {
         var router = Router.router(vertx);
         router.get().handler(this::listDatabases);
+        registerNoDatabasePostHandler(router, "eval", (req) -> new Evaluator().evaluate(null, req));
+        registerNoDatabasePostHandler(router, "suggest", (req) -> new Evaluator().suggest(null, req));
+        registerNoDatabasePostHandler(router, "javadoc", (req) -> new Evaluator().javadoc(null, req));
         registerDatabasePostHandler(router, "eval", (db, req) -> new Evaluator().evaluate(db, req));
         registerDatabasePostHandler(router, "suggest", (db, req) -> new Evaluator().suggest(db, req));
         registerDatabasePostHandler(router, "javadoc", (db, req) -> new Evaluator().javadoc(db, req));
@@ -67,7 +71,8 @@ public class ScriptHandler {
     }
 
     /**
-     * Registers a router path to which we can POST an EvaluationRequest payload and respond with any JSON payload.
+     * Registers a router path to which we can POST an EvaluationRequest payload that is supposed to run on a database
+     * and respond with any JSON payload.
      * The registered routes will be of the form /{databaseId}/{operation}
      *
      * @param router The router instance on which to register the handlers
@@ -81,6 +86,21 @@ public class ScriptHandler {
                 .orElseThrow(()-> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
             var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
             var response = handler.apply(db, request);
+            rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+        });
+    }
+
+    /**
+     * Registers a router path to which we can POST an EvaluationRequest payload and respond with any JSON payload.
+     * The registered routes will be of the form /{operation}
+     *
+     * @param router The router instance on which to register the handlers
+     * @param operation The path on which this handler should be registered
+     */
+    private void registerNoDatabasePostHandler(Router router, String operation, Function<EvaluationRequest, Object> handler) {
+        router.postWithRegex("/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
+            var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
+            var response = handler.apply(request);
             rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
         });
     }

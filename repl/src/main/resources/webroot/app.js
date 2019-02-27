@@ -39,21 +39,25 @@ const APP = (function() {
         .then( databases => {
             const selector = document.querySelector("#database-select")
             for (var db in databases) {
-                selector.options.length = 0;
                 selector.options.add(new Option(databases[db], db));
+                if (selector.value === "") {
+                    selector.value = db;
+                }
             }
         })
     }
 
-    function getSelectedDatabase() {
-        return document.querySelector("#database-select").value
+    function appendSelectedDatabasePrefix(endpoint) {
+        let database = document.querySelector("#database-select").value
+        if (database) return "/databases/" + database + endpoint;
+        else return "/databases" + endpoint;
     }
 
     function eval() {
         submitButton.disabled = true;
 
         showLoader(true);
-        fetch("/databases/" + getSelectedDatabase() + "/eval", {
+        fetch(appendSelectedDatabasePrefix("/eval"), {
             method: 'POST',
             body: JSON.stringify(getSnippet())
         })
@@ -76,7 +80,7 @@ const APP = (function() {
      * Invoke suggestion mechanism. Returns the data CodeMirror needs to display suggestions.
      */
     function suggest() {
-        return fetch("/databases/" + getSelectedDatabase() + "/suggest", {
+        return fetch(appendSelectedDatabasePrefix("/suggest"), {
             method: 'POST',
             body: JSON.stringify(getSnippet())
         })
@@ -165,7 +169,7 @@ const APP = (function() {
         getSnippet: getSnippet,
 
         /** Gets the index of the current database from the selector */
-        getSelectedDatabase: getSelectedDatabase
+        appendSelectedDatabasePrefix: appendSelectedDatabasePrefix
     }
 })();
 

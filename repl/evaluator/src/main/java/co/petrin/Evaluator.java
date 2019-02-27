@@ -29,18 +29,19 @@ public class Evaluator {
             addImports(js, db);
 
             // jooq connection
-            var connectionEvent = runSingleSnippet(js, String.format(
-                "var jooq = DSL.using(%s, %s, %s);",
-                javaString(db.connectionString),
-                javaString(db.user),
-                javaString(db.password)
-            ));
+            if (db != null) {
+                var connectionEvent = runSingleSnippet(js, String.format(
+                        "var jooq = DSL.using(%s, %s, %s);",
+                        javaString(db.connectionString),
+                        javaString(db.user),
+                        javaString(db.password)
+                ));
 
-            if (connectionEvent.status() != Snippet.Status.VALID) {
-                return setupError("Error creating a database object:\n" + formatParsingError(0, js, connectionEvent));
-            }
-            else if (connectionEvent.exception() != null) {
-                return setupError("An exception occurred connecting to the database: " + connectionEvent.exception().getMessage());
+                if (connectionEvent.status() != Snippet.Status.VALID) {
+                    return setupError("Error creating a database object:\n" + formatParsingError(0, js, connectionEvent));
+                } else if (connectionEvent.exception() != null) {
+                    return setupError("An exception occurred connecting to the database: " + connectionEvent.exception().getMessage());
+                }
             }
 
             long startTime = System.currentTimeMillis();
@@ -103,12 +104,14 @@ public class Evaluator {
 
         try (var js = buildJShell()) {
             addImports(js, db);
-            runSingleSnippet(js, String.format(
-                "var jooq = DSL.using(%s, %s, %s);",
-                javaString(db.connectionString),
-                javaString(db.user),
-                javaString(db.password)
-            ));
+            if (db != null) {
+                runSingleSnippet(js, String.format(
+                        "var jooq = DSL.using(%s, %s, %s);",
+                        javaString(db.connectionString),
+                        javaString(db.user),
+                        javaString(db.password)
+                ));
+            }
             int[] anchor = new int[1];
             var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
@@ -126,12 +129,14 @@ public class Evaluator {
         }
         try (var js = buildJShell()) {
             addImports(js, db);
-            runSingleSnippet(js, String.format(
-                "var jooq = DSL.using(%s, %s, %s);",
-                javaString(db.connectionString),
-                javaString(db.user),
-                javaString(db.password)
-            ));
+            if (db != null) {
+                runSingleSnippet(js, String.format(
+                        "var jooq = DSL.using(%s, %s, %s);",
+                        javaString(db.connectionString),
+                        javaString(db.user),
+                        javaString(db.password)
+                ));
+            }
             var javadocs = js.sourceCodeAnalysis().documentation(request.getScript(), request.getCursorPosition(), true);
             if (javadocs.isEmpty()) {
                 // try to get the documentation for the class the expression had resolved to
@@ -224,7 +229,7 @@ public class Evaluator {
         js.eval("import org.jooq.impl.DSL;");
         js.eval("import static org.jooq.impl.DSL.*;");
 
-        if (db.jooqPackage != null) {
+        if (db != null && db.jooqPackage != null) {
             js.eval("import static " + db.jooqPackage + " .Tables.*;");
         }
     }

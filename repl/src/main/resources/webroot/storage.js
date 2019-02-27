@@ -22,6 +22,16 @@ const STORAGE = (function() {
         deleteButton.addEventListener("click", deleteCurrentSnippet);
         renameButton.addEventListener("click", renameCurrentSnippet);
         snippetReplaceButton.addEventListener("click", sendSnippetToEditor);
+        catchGlobalShortcuts();
+    }
+
+    function catchGlobalShortcuts() {
+        document.addEventListener("keydown", ev => {
+            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && (ev.key == "s" || ev.key == "S")) {
+                toggleDialog();
+                if (ev.preventDefault) ev.preventDefault();
+            }
+        });
     }
 
     function getSnippetsFromStorage() {

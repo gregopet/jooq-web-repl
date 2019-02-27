@@ -37,7 +37,7 @@ public class Evaluator {
             ));
 
             if (connectionEvent.status() != Snippet.Status.VALID) {
-                return setupError("Error creating a database object:\n" + formatParsingError(js, connectionEvent));
+                return setupError("Error creating a database object:\n" + formatParsingError(0, js, connectionEvent));
             }
             else if (connectionEvent.exception() != null) {
                 return setupError("An exception occurred connecting to the database: " + connectionEvent.exception().getMessage());
@@ -45,34 +45,51 @@ public class Evaluator {
 
             long startTime = System.currentTimeMillis();
 
-            final SnippetEvent event;
-            try {
-                event = runSingleSnippet(js, request.getScript());
-            } catch (Throwable t) {
-                return jshellError(t);
-            }
+            int humanNewlinesProcessed = 0;
+            SourceCodeAnalysis.CompletionInfo completionInfo = null;
 
-            if (event == null) {
-                return success(NO_OUTPUT_TEXT, startTime);
-            }
+            while (completionInfo == null || !isProcessingComplete(completionInfo)) {
+                final SnippetEvent event;
+                try {
+                    String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
+                    completionInfo = js.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
+                    event = runSingleSnippet(js, completionInfo.source());
+                } catch (Throwable t) {
+                    return jshellError(t);
+                }
 
-            switch (event.status()) {
-                case VALID:
-                    if (event.exception() != null) {
-                        if (event.exception() instanceof EvalException) {
-                            return error(((EvalException) event.exception()).getExceptionClassName() + ": " + event.exception().getMessage(), startTime);
-                        } else {
-                            return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
-                        }
-                    } else {
-                        return success(StringUtils.defaultString(event.value(), NO_OUTPUT_TEXT), startTime);
+                if (event != null) {
+                    switch (event.status()) {
+                        case VALID:
+                            if (event.exception() != null) {
+                                if (event.exception() instanceof EvalException) {
+                                    return error(((EvalException) event.exception()).getExceptionClassName() + ": " + event.exception().getMessage(), startTime);
+                                } else {
+                                    return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
+                                }
+                            } else {
+                                if (isProcessingComplete(completionInfo)) {
+                                    return success(StringUtils.defaultString(event.value(), NO_OUTPUT_TEXT), startTime);
+                                } else {
+                                    humanNewlinesProcessed += newlinesInString(completionInfo.source());
+                                    break;
+                                }
+                            }
+                        case REJECTED:
+                            return parseError(formatParsingError(humanNewlinesProcessed, js, event));
+                        default:
+                            throw new IllegalStateException("This state was not programmed for, blame the programmer!");
                     }
-                case REJECTED:
-                    return parseError(formatParsingError(js, event));
-                default:
-                    throw new IllegalStateException("This state was not programmed for, blame the programmer!");
+                }
             }
+
+            // If we didn't return anything by the time we got here, just return this..
+            return success(NO_OUTPUT_TEXT, startTime);
         }
+    }
+
+    private static boolean isProcessingComplete(SourceCodeAnalysis.CompletionInfo completionInfo) {
+        return completionInfo.remaining() == null || completionInfo.remaining().isBlank();
     }
 
     /**
@@ -130,29 +147,31 @@ public class Evaluator {
 
     /**
      * Create a human readable error description.
+     * @param newlinesAlreadyProcessed Number of newlines processed in previous snippets
      * @param event The event that took place
      * @param diag The diagnostics objects.
      * @return A human readable representation of the error.
      */
-    private static String getErrorMessage(SnippetEvent event, Diag diag) {
+    private static String getErrorMessage(int newlinesAlreadyProcessed, SnippetEvent event, Diag diag) {
         String snippetText = event.snippet().source();
         int position = (int)diag.getPosition(); // long-sized snippet bodies? Nah...
         String textBeforeError = snippetText.substring(0, position);
         int newlinesBefore = newlinesInString(textBeforeError);
         int charactersAfterError = position - textBeforeError.length();
-        return diag.getMessage(Locale.US) + " (row " + (newlinesBefore + 1) + ", character " + charactersAfterError + ")";
+        return diag.getMessage(Locale.US) + " (row " + (newlinesAlreadyProcessed + newlinesBefore + 1) + ", character " + charactersAfterError + ")";
     }
 
     /**
      * Turn the diagnostics into a human-readable error message.
+     * @param newlinesAlreadyProcessed Number of newlines processed in previous snippets
      * @param js The JShell instance.
      * @param event The event
      * @return The human readable error message.
      */
-    private static String formatParsingError(JShell js, SnippetEvent event) {
+    private static String formatParsingError(int newlinesAlreadyProcessed, JShell js, SnippetEvent event) {
         return js
             .diagnostics(event.snippet())
-            .map( d -> getErrorMessage(event, d))
+            .map( d -> getErrorMessage(newlinesAlreadyProcessed, event, d))
             .collect(Collectors.joining("\n"));
     }
 

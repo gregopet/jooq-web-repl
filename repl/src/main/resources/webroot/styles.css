@@ -121,3 +121,69 @@ html, body, .full-height {
 #results-pane.completed-with-error {
     background-color: #f7e3e0;
 }
+
+/** Snippet storage dialog */
+#storage-dialog .modal-body {
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+}
+#storage-dialog .modal-body > * {
+    /** Need padding because we cancelled the dialog's so separator goes to the bottom */
+    padding-bottom: 0.5em;
+}
+#snippet-listing {
+    flex-basis: 200px;
+}
+#snippet-listing-names {
+    width: 200px;
+}
+
+#snippet-preview {
+    flex-grow: 1;
+    min-height: 300px;
+    max-height: 0.9wh;
+    display: flex;
+    flex-direction: column;
+
+    /** Separator between the two panes */
+    border-left: 1px solid #dee2e6;
+    padding: 0.5em;
+}
+
+#snippet-preview pre {
+    flex-grow: 1;
+}
+
+#snippet-preview button {
+    flex-grow: 0;
+}
+
+/** Buttons on top of snippet listings */
+.snippet-icons {
+    display: flex;
+
+}
+.snippet-icons > * { border-left: 1px solid #dee2e6; flex-grow: 1; text-align: center; padding-top: 4px; }
+.snippet-icons > *:first-child { border-left: 0; }
+.snippet-icons > *:hover { background-color: #212529; color: white; cursor: pointer; }
+
+/** Snippet names */
+#snippet-listing-names {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    white-space: nowrap;
+}
+#snippet-listing-names.empty {
+    border-top: 1px solid #dee2e6;
+}
+#snippet-listing-names > * { cursor: pointer }
+#snippet-listing-names > *:hover {
+     color: #1b1e21;
+     background-color: #c6c8ca;
+}
+#snippet-listing-names > .active {
+     color: #004085;
+     background-color: #b8daff;
+}

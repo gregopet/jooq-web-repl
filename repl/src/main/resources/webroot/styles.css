@@ -68,6 +68,12 @@ html, body, .full-height {
     top:0; bottom: 0;
 }
 
+/** Cards & close buttons */
+.card .card-header button.close {
+    font-size: inherit;
+    line-height: inherit;
+}
+
 /** Buttons & Keyboard shortcuts */
 #query-pane .command-area {
     position: absolute;
@@ -75,13 +81,13 @@ html, body, .full-height {
     background-color: white;
     z-index: 4; /* Appear over codemirror! */
 }
-#query-pane .command-area button {
+#query-pane .command-area .card-body button {
     /** Flex instead of float: right, much more robust */
     width: 100%;
     display: flex;
     justify-content: space-between;
 }
-#query-pane .command-area kbd {
+#query-pane .command-area .card-body kbd {
     margin-left: 2em;
 }
 

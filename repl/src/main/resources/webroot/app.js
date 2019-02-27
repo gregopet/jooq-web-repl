@@ -9,7 +9,8 @@ const APP = (function() {
     const resultsPane = document.querySelector("#results-pane");
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
-    const helpToggleButton = document.querySelector('#command-area-toggle');
+    const helpShowButton = document.querySelector('#command-area-show');
+    const helpCloseButton = document.getElementById('command-area-close');
     const commandArea = document.querySelector('.command-area');
 
     var editor = null; // CodeMirror instance
@@ -17,7 +18,8 @@ const APP = (function() {
     function init() {
         submitButton.addEventListener("click", eval);
         completeButton.addEventListener("click", () => editor.showHint());
-        helpToggleButton.addEventListener("click", toggleCommandArea);
+        helpShowButton.addEventListener("click", showCommandArea);
+        helpCloseButton.addEventListener("click", closeCommandArea);
         fetchDatabases();
         catchGlobalShortcuts();
         initCodemirror();
@@ -146,13 +148,14 @@ const APP = (function() {
         window.setTimeout(() => editor.refresh(), 300);
     }
 
-    /** Turns the buttons & hints box on/off */
-    function toggleCommandArea() {
-        if (commandArea.style.display != 'none') {
-            commandArea.style.display = "none";
-        } else {
-            commandArea.style.display = "block";
-        }
+
+    function showCommandArea() {
+        commandArea.style.display = "block";
+        helpShowButton.style.display = "none"
+    }
+    function closeCommandArea() {
+        commandArea.style.display = "none";
+        helpShowButton.style.display = "block"
     }
     
     return {

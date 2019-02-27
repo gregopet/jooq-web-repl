@@ -23,9 +23,11 @@
             <div class="top-bar">
                 <h1>jOOQ REPL</h1>
 
-                <div id="database-select-wrapper">
-                    <label for="database-select">Database:</label>
-                    <select id="database-select">
+                <div id="database-select-wrapper" class="input-group" style="max-width: 30%">
+                    <div class="input-group-prepend">
+                        <label for="database-select" class="input-group-text">Database:</label>
+                    </div>
+                    <select id="database-select" class="custom-select">
                         <option placeholder>..please wait..</option>
                     </select>
                 </div>

@@ -1,6 +1,5 @@
 const APP = (function() {
 
-    const splitter = document.querySelector("#splitter");
     const resultsPane = document.querySelector("#results-pane");
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
@@ -25,27 +24,6 @@ const APP = (function() {
         fetchDatabases();
         catchGlobalShortcuts();
         initCodemirror();
-        initResizer();
-    }
-
-    function initResizer() {
-        var isMouseDown = false;
-        splitter.addEventListener("mousedown", () => isMouseDown = true);
-        document.addEventListener("mouseup", () => isMouseDown = false);
-        document.addEventListener("mousemove", (ev) => {
-            if (ev && isMouseDown && ev.offsetY) {
-                var dist = ev.clientY - resultsPane.offsetTop;
-                resultsPane.style['flex-basis'] = "" + (resultsPane.offsetHeight - dist) + "px";
-                resultsPane.style['flex-grow'] = "0";
-                if (ev.preventDefault) ev.preventDefault();
-            }
-        });
-	
-        // go back to "neutral" size when double clicking on the splitter
-        document.addEventListener("dblclick", (ev) => {
-            resultsPane.style['flex-basis'] = "";
-            resultsPane.style['flex-grow'] = "0";
-        });
     }
 
     function catchGlobalShortcuts() {
@@ -241,7 +219,14 @@ const APP = (function() {
     }
     
     return {
-        init: init
+        /** The initialization function called on DOM load */
+        init: init,
+
+        /** The main container for evaluation results */
+        resultsPane: resultsPane,
+
+        /** Gets the current contents and cursor position from the editor */
+        getSnippet: getSnippet
     }
 })();
 

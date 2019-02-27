@@ -86,6 +86,12 @@ public class Evaluator {
 
         try (var js = buildJShell()) {
             addImports(js, db);
+            runSingleSnippet(js, String.format(
+                "var jooq = DSL.using(%s, %s, %s);",
+                javaString(db.connectionString),
+                javaString(db.user),
+                javaString(db.password)
+            ));
             int[] anchor = new int[1];
             var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
@@ -103,6 +109,12 @@ public class Evaluator {
         }
         try (var js = buildJShell()) {
             addImports(js, db);
+            runSingleSnippet(js, String.format(
+                "var jooq = DSL.using(%s, %s, %s);",
+                javaString(db.connectionString),
+                javaString(db.user),
+                javaString(db.password)
+            ));
             var javadocs = js.sourceCodeAnalysis().documentation(request.getScript(), request.getCursorPosition(), true);
             if (javadocs.isEmpty()) {
                 // try to get the documentation for the class the expression had resolved to

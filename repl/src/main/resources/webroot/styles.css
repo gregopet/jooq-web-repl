@@ -62,6 +62,14 @@ html, body, .full-height {
     height: 6px;
 }
 
+/** A loader in the results pane.. */
+#results-pane { position: relative; }
+#results-pane .loader {
+    position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+    background-color: #f7f7f7;
+}
+
+
 /* Code pane contains editor + hints */
 #query-pane textarea {
     position: absolute;

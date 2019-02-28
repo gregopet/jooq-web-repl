@@ -6,7 +6,9 @@ function htmlEncode( html ) {
 
 const APP = (function() {
 
-    const resultsPane = document.querySelector("#results-pane");
+    const resultsPane = document.getElementById('results-pane');
+    const resultsArea = document.querySelector("#results-pane pre");
+    const resultsLoader = document.querySelector("#results-pane > .loader");
     const submitButton = document.querySelector('#submit-button');
     const completeButton = document.querySelector('#complete-button');
     const helpShowButton = document.querySelector('#command-area-show');
@@ -58,23 +60,23 @@ const APP = (function() {
     function eval() {
         submitButton.disabled = true;
 
-        showLoader(true);
+        showLoader();
         fetch(appendSelectedDatabasePrefix("/eval"), {
             method: 'POST',
             body: JSON.stringify(getSnippet())
         })
         .then( resp => {
-            showLoader(false);
+            hideLoader();
             submitButton.disabled = false;
             return resp.json();
         })
         .then( result => {
-            resultsPane.innerText = result.output;
-            resultsPane.classList.toggle('completed-with-error', result.error)
+            resultsArea.innerText = result.output;
+            resultsArea.classList.toggle('completed-with-error', result.error)
         })
         .catch ( err => {
-            document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err;
-            resultsPane.classList.add('completed-with-error')
+            resultsArea.innerText = "Network error submitting query to server!\n" + err;
+            resultsArea.classList.add('completed-with-error')
         })
     }
 
@@ -88,7 +90,7 @@ const APP = (function() {
         })
         .then( resp => resp.json() )
         .then(mapSuggestions )
-        .catch ( err => { document.querySelector("#results-pane").innerText = "Network error submitting query to server!\n" + err});
+        .catch ( err => { resultsArea.innerText = "Network error submitting query to server!\n" + err});
     }
     
     /** Maps the returned suggestions to a format our editor can understand */
@@ -127,12 +129,6 @@ const APP = (function() {
         }
     }
     
-    function showLoader(show) {
-        if (show) {
-            document.querySelector("#results-pane").innerHTML = "... EXECUTING ...";
-        }
-    }
-    
     function initCodemirror() {
         editor = CodeMirror.fromTextArea(document.querySelector('#script-content'), {
             lineNumbers: true,
@@ -157,7 +153,22 @@ const APP = (function() {
         commandArea.style.display = "none";
         helpShowButton.style.display = "block"
     }
-    
+
+    /**
+     * Replaces the results screen with a loader.
+     * The loader overlays the results areas so we don't need to hide those.
+     */
+    function showLoader() {
+        resultsLoader.style.display = "block";
+    }
+
+    /**
+     * Shows the results pane again instead of the loader.
+     */
+    function hideLoader() {
+        resultsLoader.style.display = "none";
+    }
+
     return {
         /** The CodeMirror editor instance */
         getEditor: () => editor,

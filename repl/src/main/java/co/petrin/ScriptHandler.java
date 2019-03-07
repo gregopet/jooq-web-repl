@@ -80,17 +80,21 @@ public class ScriptHandler {
      */
     private void registerDatabasePostHandler(Router router, String operation, BiFunction<Database, EvaluationRequest, Object> handler) {
         router.postWithRegex("/([0-9]{1,3})/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
-            var dbId = Integer.parseInt(rc.request().getParam("param0"));
-            var db = databases.stream()
-                .filter( dbConfig -> dbConfig.id == dbId ).findAny()
-                .orElseThrow(()-> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
-            var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-            var response = handler.apply(db, request);
-            int returnStatus = 200;
-            if (response instanceof EvaluationResponse && ((EvaluationResponse)response).isError()) {
-                returnStatus = 400;
+            try {
+                var dbId = Integer.parseInt(rc.request().getParam("param0"));
+                var db = databases.stream()
+                        .filter(dbConfig -> dbConfig.id == dbId).findAny()
+                        .orElseThrow(() -> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
+                var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
+                var response = handler.apply(db, request);
+                int returnStatus = 200;
+                if (response instanceof EvaluationResponse && ((EvaluationResponse) response).isError()) {
+                    returnStatus = 400;
+                }
+                rc.response().setStatusCode(returnStatus).putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+            } catch (Throwable t) {
+                rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }
-            rc.response().setStatusCode(returnStatus).putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
         });
     }
 
@@ -103,9 +107,13 @@ public class ScriptHandler {
      */
     private void registerNoDatabasePostHandler(Router router, String operation, Function<EvaluationRequest, Object> handler) {
         router.postWithRegex("/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
-            var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-            var response = handler.apply(request);
-            rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+            try {
+                var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
+                var response = handler.apply(request);
+                rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+            } catch (Throwable t) {
+                rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
+            }
         });
     }
 

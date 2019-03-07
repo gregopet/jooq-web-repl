@@ -86,7 +86,11 @@ public class ScriptHandler {
                 .orElseThrow(()-> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
             var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
             var response = handler.apply(db, request);
-            rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+            int returnStatus = 200;
+            if (response instanceof EvaluationResponse && ((EvaluationResponse)response).isError()) {
+                returnStatus = 400;
+            }
+            rc.response().setStatusCode(returnStatus).putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
         });
     }
 

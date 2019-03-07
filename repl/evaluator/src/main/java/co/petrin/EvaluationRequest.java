@@ -24,4 +24,12 @@ public class EvaluationRequest {
     public void setCursorPosition(Integer cursorPosition) {
         this.cursorPosition = cursorPosition;
     }
+
+    public EvaluationRequest(String script, Integer cursorPosition) {
+        this.script = script;
+        this.cursorPosition = cursorPosition;
+    }
+
+    public EvaluationRequest() {
+    }
 }

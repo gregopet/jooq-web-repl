@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.text.StringEscapeUtils;
 import static co.petrin.EvaluationResponse.*;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A class that evaluates user submitted scripts with some pre-prepared variables, such as
@@ -113,8 +114,10 @@ public class Evaluator {
                 ));
             }
             int[] anchor = new int[1];
-            var suggestions = js.sourceCodeAnalysis().completionSuggestions(request.getScript(), request.getCursorPosition(), anchor);
-            return new SuggestionResponse(request.getCursorPosition(), anchor[0], suggestions);
+            var amendedRequest = trimEvaluationRequest(js, request);
+            var anchorOffset = request.getCursorPosition() - amendedRequest.getCursorPosition();
+            var suggestions = js.sourceCodeAnalysis().completionSuggestions(amendedRequest.getScript(), amendedRequest.getCursorPosition(), anchor);
+            return new SuggestionResponse(request.getCursorPosition(), anchor[0] + anchorOffset, suggestions);
         }
     }
 
@@ -137,16 +140,17 @@ public class Evaluator {
                         javaString(db.password)
                 ));
             }
-            var javadocs = js.sourceCodeAnalysis().documentation(request.getScript(), request.getCursorPosition(), true);
+            var amendedRequest = trimEvaluationRequest(js, request);
+            var javadocs = js.sourceCodeAnalysis().documentation(amendedRequest.getScript(), amendedRequest.getCursorPosition(), true);
             if (javadocs.isEmpty()) {
                 // try to get the documentation for the class the expression had resolved to
-                var resolvedClass = js.sourceCodeAnalysis().analyzeType(request.getScript(), request.getCursorPosition());
+                var resolvedClass = js.sourceCodeAnalysis().analyzeType(amendedRequest.getScript(), amendedRequest.getCursorPosition());
                 if (resolvedClass != null && !resolvedClass.isBlank()) {
                     javadocs = js.sourceCodeAnalysis().documentation(resolvedClass, resolvedClass.length(), true);
                 }
             }
 
-            return javadocs.stream().map(DocumentationResponse::new).collect(Collectors.toList());
+            return javadocs.stream().map(DocumentationResponse::new).collect(toList());
         }
     }
 
@@ -244,6 +248,40 @@ public class Evaluator {
             return "null";
         } else {
             return "\"" + StringEscapeUtils.escapeJava(input) + "\"";
+        }
+    }
+
+    /**
+     * Trims an evaluation request by running any import snippets before the current cursor position, thus making
+     * suggestions and javadocs work even if there are imports all over the place in the code.
+     * Returns the amended request or returns null if an exception had occured.
+     */
+    private static EvaluationRequest trimEvaluationRequest(JShell js, EvaluationRequest req) {
+        int sizeOfEvaluated = 0;
+        StringBuilder unevaluated = new StringBuilder();
+
+
+        var completionAnalysis = js.sourceCodeAnalysis().analyzeCompletion(req.getScript());
+        while(completionAnalysis.source() != null && !completionAnalysis.source().isEmpty()) {
+            if (completionAnalysis.source().length() + unevaluated.length() + sizeOfEvaluated >= req.getCursorPosition()) {
+                unevaluated.append(completionAnalysis.source());
+                return new EvaluationRequest(unevaluated.toString(), req.getCursorPosition() - sizeOfEvaluated);
+            }
+            else if (completionAnalysis.source().trim().startsWith("import")) {
+                js.eval(completionAnalysis.source());
+                sizeOfEvaluated += completionAnalysis.source().length();
+            }
+            else {
+               unevaluated.append(completionAnalysis.source());
+            }
+            completionAnalysis = js.sourceCodeAnalysis().analyzeCompletion(completionAnalysis.remaining());
+        }
+
+        if (completionAnalysis.remaining() != null) {
+            unevaluated.append(completionAnalysis.remaining());
+            return new EvaluationRequest(unevaluated.toString(), req.getCursorPosition() - sizeOfEvaluated);
+        } else {
+            return req;
         }
     }
 }

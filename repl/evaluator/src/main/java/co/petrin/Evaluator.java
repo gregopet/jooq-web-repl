@@ -211,8 +211,11 @@ public class Evaluator {
         List<SnippetEvent> events = js.eval(input);
         if (events.size() == 0) {
             return null;
-        } else if (events.size() > 1) {
-            throw new IllegalStateException("Silly programmer didn't know he could get more than 1 event!");
+        } else {
+            var originalEvents = events.stream().filter(ev -> ev.causeSnippet() == null).collect(toList());
+            if (originalEvents.size() > 1) {
+                throw new IllegalStateException("Silly programmer didn't know he could get more than 1 original event!");
+            }
         }
         return events.get(0);
     }

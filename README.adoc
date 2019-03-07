@@ -26,10 +26,8 @@ you can't get a query to work.
 
 You can also try playing with the `docker-compose.yaml` file if you want to
 add additional RDBMS engines - MySQL should be simple. As for supporting
-database schemas other than Sakila, you will have to provide your own jOOQ
-model (imports will also not work for your model yet unless you modify some
-trivial source code - I'll probably make this easier in the near future
-because I need it as well..).
+database schemas other than Sakila, you can either provide your own jOOQ
+model or <<generating-jooq-model,generate one on the fly>>.
 
 Note that if you can't get your changes to show up despite restarting
 docker-compose, the nuclear approach seems to be `docker-compose up -V 
@@ -58,17 +56,15 @@ coordinates to use when building the REPL
 REPL_JOOQ_VERSION:: The jOOQ version to include into the REPL, defaults to
 3.11.9
 
-
+[[generating-jooq-model]]
 === Generating the jOOQ model during build
 
 If you don't have a jOOQ model built yet, one can be built during startup. Set
-the `BUILD_MODEL` and `JOOQ_PACKAGE` properties (see the 
+the `GENERATE_JOOQ_PACKAGE` property (see the 
 <<_defining_the_available_databases,section>> about configuring databases)
 to have the build system make a jOOQ model for you. Also make sure that your
 database driver is on the classpath by copying its JAR to the `extra-libs`
-directory (you need it for running queries anyway). The generated jOOQ model
-will be automatically available for you and its artifacts statically imported
-into the REPL.
+directory (you need it for running queries anyway). 
 
 You can even copy the generated model and use it in your own project, though
 you should know that it will be built with very generic settings. jOOQ's
@@ -120,12 +116,14 @@ URL:: the connection string to use when connecting to the database
 DESCRIPTION:: the text to be shown for this connection on the user interface
 USER:: the username to use when connecting to this database
 PASSWORD:: the password to use when connecting to this database
-JOOQ_PACKAGE:: the package name used when generating the jOOQ model, it is also
-automatically static-imported into snippets run on that database
-BUILD_MODEL:: if present and not blank, schema generation will be performed
+GENERATE_JOOQ_PACKAGE:: if present and not blank, a jOOQ schema will be
+generated with this value as its package name
+SCRIPT_PREFIX:: text to automatically inject before any user scripts, use it to
+provide common imports or anything else that will make the users' life easier.
+By default, `import org.jooq.impl.DSL` and 
+`import static org.jooq.impl.DSL.*;` will be prefixed;
 
 For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 
 `DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER`,
-`DATABASE_OLD_POSTGRES_PASSWORD` and 
-`DATABASE_OLD_POSTGRES_JOOQ_PACKAGE`.
+`DATABASE_OLD_POSTGRES_PASSWORD`.

@@ -60,7 +60,7 @@ run {
         DATABASE_POSTGRES_URL : 'jdbc:postgresql://localhost:5432/sakila',
         DATABASE_POSTGRES_USER : 'postgres',
         DATABASE_POSTGRES_PASSWORD : '',
-        DATABASE_POSTGRES_JOOQ_PACKAGE : 'sakila',
+        DATABASE_POSTGRES_SCRIPT_PREFIX : 'import static org.jooq.impl.DSL.*; import org.jooq.impl.DSL; import static sakila.default_schema.Tables.*;'
   ])
 }
 
@@ -76,7 +76,7 @@ task('jooqModels', description: "Generate jOOQ schemas for any databases configu
         .keySet()
         .findAll { it.startsWith("DATABASE_") && it.endsWith("_URL") }
         .collect { it.substring(9, it.length() - "_URL".length()) }
-        .findAll { System.getenv("DATABASE_${it}_BUILD_MODEL") && System.getenv("DATABASE_${it}_JOOQ_PACKAGE") }
+        .findAll { System.getenv("DATABASE_${it}_GENERATE_JOOQ_PACKAGE") }
     onlyIf { databases.size() > 0 }
 
     doLast {
@@ -94,11 +94,10 @@ task('jooqModels', description: "Generate jOOQ schemas for any databases configu
                     <generator>
                         <database>
                             <includes>.*</includes>
-                            <inputSchema>public</inputSchema>
                         </database>
 
                         <target>
-                            <packageName>${System.getenv("DATABASE_${database}_JOOQ_PACKAGE")}</packageName>
+                            <packageName>${System.getenv("DATABASE_${database}_GENERATE_JOOQ_PACKAGE")}</packageName>
 
                             <!-- The destination directory of your generated classes -->
                             <directory>${projectDir}/evaluator/build/generated/java</directory>

@@ -20,7 +20,7 @@ public class Evaluator {
     /**
      * Builds a new evaluator and evaluates the script.
      * @param db The database to run the script against
-     * @param request The script to evaluate
+     * @param request The script to evaluateUnnamed
      * @return The evaluation result
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
@@ -31,7 +31,7 @@ public class Evaluator {
             // jooq connection
             if (db != null) {
                 var connectionEvent = runSingleSnippet(js, String.format(
-                        "var jooq = DSL.using(%s, %s, %s);",
+                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                         javaString(db.connectionString),
                         javaString(db.user),
                         javaString(db.password)
@@ -106,7 +106,7 @@ public class Evaluator {
             addImports(js, db);
             if (db != null) {
                 runSingleSnippet(js, String.format(
-                        "var jooq = DSL.using(%s, %s, %s);",
+                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                         javaString(db.connectionString),
                         javaString(db.user),
                         javaString(db.password)
@@ -131,7 +131,7 @@ public class Evaluator {
             addImports(js, db);
             if (db != null) {
                 runSingleSnippet(js, String.format(
-                        "var jooq = DSL.using(%s, %s, %s);",
+                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                         javaString(db.connectionString),
                         javaString(db.user),
                         javaString(db.password)
@@ -226,11 +226,15 @@ public class Evaluator {
      */
     private static void addImports(JShell js, Database db) {
         // we shall make these configurable & browsable one day!
-        js.eval("import org.jooq.impl.DSL;");
-        js.eval("import static org.jooq.impl.DSL.*;");
-
-        if (db != null && db.jooqPackage != null) {
-            js.eval("import static " + db.jooqPackage + " .Tables.*;");
+        if (StringUtils.isBlank(db.scriptPrefix)) {
+            js.eval("import org.jooq.impl.DSL;");
+            js.eval("import static org.jooq.impl.DSL.*;");
+        } else {
+            var toEval = js.sourceCodeAnalysis().analyzeCompletion(db.scriptPrefix);
+            while(toEval.source() != null && !toEval.source().isBlank()) {
+                js.eval(toEval.source());
+                toEval = js.sourceCodeAnalysis().analyzeCompletion(toEval.remaining());
+            }
         }
     }
 

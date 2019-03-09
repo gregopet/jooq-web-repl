@@ -28,7 +28,7 @@ class NativeEvaluatorSpec extends Specification {
         result.output == "java.lang.ArithmeticException: / by zero"
     }
 
-    def "Code inside spawned JARs have access to the same classpath as the spawning code"() {
+    def "Code inside local evaluators has access to the same classpath as the code that created the evaluator"() {
         expect:
         !Evaluator.local().evaluate(null, new EvaluationRequest("spock.lang.Specification.class", 0)).error
     }

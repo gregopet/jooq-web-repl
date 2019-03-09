@@ -50,7 +50,7 @@ class SpawnedEvaluatorSpec extends Specification {
         cowfulEvaluator.evaluate(null, command).output.contains('indigenous')
     }
 
-    def "Code inside spawned JARs does not have access to the same classpath as the spawning code"() {
+    def "Code inside spawned evaluators does not have access to the same classpath as the code that created the evaluator"() {
         expect:
         Evaluator.spawn(null).evaluate(null, new EvaluationRequest("spock.lang.Specification.class", 0)).error
     }

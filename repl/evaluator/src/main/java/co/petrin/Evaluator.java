@@ -1,11 +1,11 @@
 package co.petrin;
 
 import jdk.jshell.*;
-import org.jooq.tools.StringUtils;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import static co.petrin.EvaluationResponse.*;
 import static java.util.stream.Collectors.toList;
@@ -41,7 +41,7 @@ public class Evaluator {
                 if (connectionEvent.status() != Snippet.Status.VALID) {
                     return setupError("Error creating a database object:\n" + formatParsingError(0, js, connectionEvent));
                 } else if (connectionEvent.exception() != null) {
-                    return setupError("An exception occurred connecting to the database: " + connectionEvent.exception().getMessage());
+                    return setupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
                 }
             }
 
@@ -64,11 +64,7 @@ public class Evaluator {
                     switch (event.status()) {
                         case VALID:
                             if (event.exception() != null) {
-                                if (event.exception() instanceof EvalException) {
-                                    return error(((EvalException) event.exception()).getExceptionClassName() + ": " + event.exception().getMessage(), startTime);
-                                } else {
-                                    return error(event.exception().getClass().getName() + ": " + event.exception().getMessage(), startTime);
-                                }
+                                return error(printEvalException(event), startTime);
                             } else {
                                 if (isProcessingComplete(completionInfo)) {
                                     return success(StringUtils.defaultString(event.value(), NO_OUTPUT_TEXT), startTime);
@@ -225,6 +221,20 @@ public class Evaluator {
         .executionEngine("local") //https://docs.oracle.com/javase/9/docs/api/jdk/jshell/spi/package-summary.html
         .out(System.out) // wrong, right?
         .build();
+    }
+
+    /**
+     * Tries to get a good error description from a snippet event containing an error.
+     */
+    private static String printEvalException(SnippetEvent ev) {
+        if (ev.exception() == null) throw new IllegalArgumentException("Snippet contained no error!");
+        var ex = ev.exception().getCause() != null ? ev.exception().getCause() : ev.exception();
+
+        if (ex instanceof EvalException) {
+            return ((EvalException) ex).getExceptionClassName() + ": " + ex.getMessage();
+        } else {
+            return ex.getClass().getName() + ": " + ex.getMessage();
+        }
     }
 
     /**

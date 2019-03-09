@@ -2,10 +2,14 @@ package co.petrin;
 
 import jdk.jshell.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import static co.petrin.EvaluationResponse.*;
 import static java.util.stream.Collectors.toList;
@@ -25,15 +29,39 @@ public class Evaluator {
     private final String mode;
 
     /**
+     * The extra classpath entries to provide remote evaluation engines with.
+     */
+    private final List<String> extraClasspath;
+
+    /**
      * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
      * shared variables and share the same classpath.
      */
     public static Evaluator local() {
-        return new Evaluator("local");
+        return new Evaluator("local", null);
     }
 
-    private Evaluator(String mode) {
+    /**
+     * Spawns an extra process to run the evaluation in, closing the process after evaluation finishes.
+     *
+     * Alternate classpaths can be provided to these processes. They are isolated from the launching process which
+     * helps protect them against malicious scripts.
+     *
+     * External evaluators are potentially also easier to kill, should they block, as the whole process can be
+     * terminated.
+     *
+     * @param extraClasspath Directories containing classes and JAR files to add to the spawned process' classpath.
+     */
+    public static Evaluator spawn(List<String> extraClasspath) {
+        // Copied from JShell class
+        String spec = "jdi:launch(true)";
+
+        return new Evaluator(spec, extraClasspath);
+    }
+
+    private Evaluator(String mode, List<String> extraClasspath) {
         this.mode = mode;
+        this.extraClasspath = extraClasspath;
     }
 
     /**
@@ -235,10 +263,30 @@ public class Evaluator {
     }
 
     private JShell buildJShell() {
-        return JShell.builder()
+        var builder = JShell.builder()
         .executionEngine(mode)
-        .out(System.out) // wrong, right?
-        .build();
+        .out(System.out); // wrong, right?
+
+        var shell = builder.build();
+        if (extraClasspath != null) {
+            for (String cp : extraClasspath) {
+                shell.addToClasspath(cp);
+                if (Files.isDirectory(Path.of(cp))) {
+                    try {
+                        // Note: this code does not currently handle JAR files in subdirectories!
+                        Files
+                            .list(Path.of(cp))
+                            .map(Object::toString)
+                            .filter(p -> p.endsWith(".jar"))
+                            .forEach(shell::addToClasspath);
+                    } catch (IOException ex) {
+                        // proper log? can we expect this? it's probably not very likely..?
+                        System.out.println("An exception occured scanning the classpath: " + ExceptionUtils.getMessage(ex));
+                    }
+                }
+            }
+        }
+        return shell;
     }
 
     /**
@@ -260,7 +308,9 @@ public class Evaluator {
      * @param js The JShell instance.
      */
     private static void addImports(JShell js, Database db) {
-        // we shall make these configurable & browsable one day!
+        if (db == null) {
+            return;
+        }
         if (StringUtils.isBlank(db.scriptPrefix)) {
             js.eval("import org.jooq.impl.DSL;");
             js.eval("import static org.jooq.impl.DSL.*;");

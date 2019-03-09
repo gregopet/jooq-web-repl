@@ -8,12 +8,15 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Lists available databases and executes code on them.
@@ -29,6 +32,9 @@ public class ScriptHandler {
 
     /** The database list in JSON form for sending down to clients */
     private final String databasesJson;
+
+    /** Name of the system variable containing a whitespace-separated classpath to provide a remote evaluator with */
+    private static final String EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE = "EVALUATOR_CLASSPATH";
 
     public ScriptHandler() {
         databases = Database.parseFromEnvironment();
@@ -122,7 +128,9 @@ public class ScriptHandler {
      * @return A constructed evaluator.
      */
     private Evaluator createEvaluator() {
-        return Evaluator.local();
+        var evalCp = StringUtils.defaultIfEmpty(System.getenv(EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE), "");
+        var cpList = Arrays.stream(evalCp.split("\\s")).filter(StringUtils::isNotBlank).collect(toList());
+        return Evaluator.spawn(cpList);
     }
 
 }

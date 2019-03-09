@@ -60,15 +60,23 @@ run {
         DATABASE_POSTGRES_URL : 'jdbc:postgresql://localhost:5432/sakila',
         DATABASE_POSTGRES_USER : 'postgres',
         DATABASE_POSTGRES_PASSWORD : '',
-        DATABASE_POSTGRES_SCRIPT_PREFIX : 'import static org.jooq.impl.DSL.*; import org.jooq.impl.DSL; import static sakila.default_schema.Tables.*;'
+        DATABASE_POSTGRES_SCRIPT_PREFIX : 'import static org.jooq.impl.DSL.*; import org.jooq.impl.DSL; import static sakila.default_schema.Tables.*;',
+        EVALUATOR_CLASSPATH: "$buildDir/evaluatorRuntime $projectDir/../postgres /media/kingston_home/gregor/proj/jooq-web-repl/repl/evaluator/build/resources/test/cowsay-1.0.3.jar"
   ])
 }
 
 task('runFromDocker', type: JavaExec, description: 'Main entry point for docker containers') {
     main = mainClassName
     classpath = sourceSets.main.runtimeClasspath
-    classpath += fileTree("$projectDir/extra-libs")
 }
+
+task copyEvaluatorDependencies(type: Copy, description: "Copies Evaluator's dependencies into a directory so it can be included into remote Evaluators' classpaths") {
+	from project(":evaluator").sourceSets.main.runtimeClasspath
+	into "$buildDir/evaluatorRuntime/"
+}
+
+tasks.compileJava.dependsOn copyEvaluatorDependencies
+
 
 task('jooqModels', description: "Generate jOOQ schemas for any databases configured to do so") {
 

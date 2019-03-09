@@ -50,12 +50,12 @@ public class ScriptHandler {
     public Router getRouter(Vertx vertx) {
         var router = Router.router(vertx);
         router.get().handler(this::listDatabases);
-        registerNoDatabasePostHandler(router, "eval", (req) -> new Evaluator().evaluate(null, req));
-        registerNoDatabasePostHandler(router, "suggest", (req) -> new Evaluator().suggest(null, req));
-        registerNoDatabasePostHandler(router, "javadoc", (req) -> new Evaluator().javadoc(null, req));
-        registerDatabasePostHandler(router, "eval", (db, req) -> new Evaluator().evaluate(db, req));
-        registerDatabasePostHandler(router, "suggest", (db, req) -> new Evaluator().suggest(db, req));
-        registerDatabasePostHandler(router, "javadoc", (db, req) -> new Evaluator().javadoc(db, req));
+        registerNoDatabasePostHandler(router, "eval", (req) -> createEvaluator().evaluate(null, req));
+        registerNoDatabasePostHandler(router, "suggest", (req) -> createEvaluator().suggest(null, req));
+        registerNoDatabasePostHandler(router, "javadoc", (req) -> createEvaluator().javadoc(null, req));
+        registerDatabasePostHandler(router, "eval", (db, req) -> createEvaluator().evaluate(db, req));
+        registerDatabasePostHandler(router, "suggest", (db, req) -> createEvaluator().suggest(db, req));
+        registerDatabasePostHandler(router, "javadoc", (db, req) -> createEvaluator().javadoc(db, req));
         return router;
     }
 
@@ -115,6 +115,14 @@ public class ScriptHandler {
                 rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }
         });
+    }
+
+    /**
+     * Creates the evaluator to run for a certain request.
+     * @return A constructed evaluator.
+     */
+    private Evaluator createEvaluator() {
+        return Evaluator.local();
     }
 
 }

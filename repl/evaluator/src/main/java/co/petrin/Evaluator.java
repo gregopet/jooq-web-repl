@@ -19,6 +19,24 @@ public class Evaluator {
     private static final String NO_OUTPUT_TEXT = "The execution finished without results.";
 
     /**
+     * The mode for creating the execution engine, see
+     * https://docs.oracle.com/javase/9/docs/api/jdk/jshell/spi/package-summary.html
+     */
+    private final String mode;
+
+    /**
+     * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
+     * shared variables and share the same classpath.
+     */
+    public static Evaluator local() {
+        return new Evaluator("local");
+    }
+
+    private Evaluator(String mode) {
+        this.mode = mode;
+    }
+
+    /**
      * Builds a new evaluator and evaluates the script.
      * @param db The database to run the script against
      * @param request The script to evaluateUnnamed
@@ -216,9 +234,9 @@ public class Evaluator {
         return events.get(0);
     }
 
-    private static JShell buildJShell() {
+    private JShell buildJShell() {
         return JShell.builder()
-        .executionEngine("local") //https://docs.oracle.com/javase/9/docs/api/jdk/jshell/spi/package-summary.html
+        .executionEngine(mode)
         .out(System.out) // wrong, right?
         .build();
     }

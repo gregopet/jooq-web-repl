@@ -2,7 +2,10 @@ package co.petrin;
 
 import jdk.jshell.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -71,7 +74,8 @@ public class Evaluator {
      * @return The evaluation result
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
-        try (var js = buildJShell()) {
+        var outputStorage = new ByteArrayOutputStream();
+        try (var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8); var js = buildJShell(ps)) {
 
             addImports(js, db);
 
@@ -113,7 +117,8 @@ public class Evaluator {
                                 return error(printEvalException(event), startTime);
                             } else {
                                 if (isProcessingComplete(completionInfo)) {
-                                    return success(StringUtils.defaultString(event.value(), NO_OUTPUT_TEXT), startTime);
+                                    var output = StringUtils.defaultIfBlank(outputStorage.toString(StandardCharsets.UTF_8), "");
+                                    return success(StringUtils.defaultIfBlank(output + StringUtils.defaultIfBlank(event.value(), ""), NO_OUTPUT_TEXT), startTime);
                                 } else {
                                     humanNewlinesProcessed += newlinesInString(completionInfo.source());
                                     break;
@@ -128,7 +133,8 @@ public class Evaluator {
             }
 
             // If we didn't return anything by the time we got here, just return this..
-            return success(NO_OUTPUT_TEXT, startTime);
+            var output = StringUtils.defaultIfBlank(outputStorage.toString(StandardCharsets.UTF_8), "");
+            return success(StringUtils.defaultIfBlank(output, NO_OUTPUT_TEXT), startTime);
         }
     }
 
@@ -145,14 +151,14 @@ public class Evaluator {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
-        try (var js = buildJShell()) {
+        try (var js = buildJShell(null)) {
             addImports(js, db);
             if (db != null) {
                 runSingleSnippet(js, String.format(
-                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
-                        javaString(db.connectionString),
-                        javaString(db.user),
-                        javaString(db.password)
+                    "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
+                    javaString(db.connectionString),
+                    javaString(db.user),
+                    javaString(db.password)
                 ));
             }
             int[] anchor = new int[1];
@@ -172,7 +178,7 @@ public class Evaluator {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
-        try (var js = buildJShell()) {
+        try (var js = buildJShell(null)) {
             addImports(js, db);
             if (db != null) {
                 runSingleSnippet(js, String.format(
@@ -262,10 +268,13 @@ public class Evaluator {
         return events.get(0);
     }
 
-    private JShell buildJShell() {
+    private JShell buildJShell(PrintStream outputStream) {
         var builder = JShell.builder()
-        .executionEngine(mode)
-        .out(System.out); // wrong, right?
+        .executionEngine(mode);
+
+        if (outputStream != null) {
+            builder.out(outputStream).err(outputStream);
+        }
 
         var shell = builder.build();
         if (extraClasspath != null) {

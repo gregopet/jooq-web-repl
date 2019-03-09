@@ -54,4 +54,19 @@ class SpawnedEvaluatorSpec extends Specification {
         expect:
         Evaluator.spawn(null).evaluate(null, new EvaluationRequest("spock.lang.Specification.class", 0)).error
     }
+
+    def "Spawned evaluator captures standard output"() {
+        given: 'an evaluator'
+        def eval = Evaluator.spawn(null)
+
+        expect: 'standard output to be captured'
+        eval.evaluate(null, new EvaluationRequest('System.out.print("haha")', 0)).output == 'haha'
+        eval.evaluate(null, new EvaluationRequest('System.out.println("haha")', 0)).output == 'haha\n'
+        eval.evaluate(null, new EvaluationRequest('System.out.println("haha");"lala"', 0)).output == 'haha\n"lala"'
+
+        and: 'standard error to be captured'
+        eval.evaluate(null, new EvaluationRequest('System.err.print("haha")', 0)).output == 'haha'
+        eval.evaluate(null, new EvaluationRequest('System.err.println("haha")', 0)).output == 'haha\n'
+        eval.evaluate(null, new EvaluationRequest('System.err.println("haha");"lala"', 0)).output == 'haha\n"lala"'
+    }
 }

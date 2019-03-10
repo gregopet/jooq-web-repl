@@ -94,6 +94,7 @@ html, body, .full-height {
     width: 100%;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 #query-pane .command-area .card-body kbd {
     margin-left: 2em;

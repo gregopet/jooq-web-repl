@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class ScriptHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ScriptHandler.class);
+    private static final Logger SCRIPT_LOG = LoggerFactory.getLogger("script.eval");
 
     /** Maximum length of scripts incoming in request bodies in bytes */
     private static long BODY_SIZE_LIMIT = 100_000; // is this enough?
@@ -57,10 +58,20 @@ public class ScriptHandler {
     public Router getRouter(Vertx vertx) {
         var router = Router.router(vertx);
         router.get().handler(this::listDatabases);
-        registerNoDatabasePostHandler(router, "eval", (evaluator, req) -> evaluator.evaluate(null, req));
+        registerNoDatabasePostHandler(router, "eval", (evaluator, req) -> {
+            if (SCRIPT_LOG.isInfoEnabled()) {
+                SCRIPT_LOG.info("Evaluating script (without a database): " + req.getScript());
+            }
+            return evaluator.evaluate(null, req);
+        });
         registerNoDatabasePostHandler(router, "suggest", (evaluator, req) -> evaluator.suggest(null, req));
         registerNoDatabasePostHandler(router, "javadoc", (evaluator, req) -> evaluator.javadoc(null, req));
-        registerDatabasePostHandler(router, "eval", (evaluator, db, req) -> evaluator.evaluate(db, req));
+        registerDatabasePostHandler(router, "eval", (evaluator, db, req) -> {
+            if (SCRIPT_LOG.isInfoEnabled()) {
+                SCRIPT_LOG.info("Evaluating script (on database " + db + "): " + req.getScript());
+            }
+            return evaluator.evaluate(db, req);
+        });
         registerDatabasePostHandler(router, "suggest", (evaluator, db, req) -> evaluator.suggest(db, req));
         registerDatabasePostHandler(router, "javadoc", (evaluator, db, req) -> evaluator.javadoc(db, req));
         return router;

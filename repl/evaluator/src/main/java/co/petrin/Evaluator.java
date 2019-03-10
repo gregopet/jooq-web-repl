@@ -117,8 +117,7 @@ public class Evaluator {
                                 return error(printEvalException(event), startTime);
                             } else {
                                 if (isProcessingComplete(completionInfo)) {
-                                    var output = StringUtils.defaultIfBlank(outputStorage.toString(StandardCharsets.UTF_8), "");
-                                    return success(StringUtils.defaultIfBlank(output + StringUtils.defaultIfBlank(event.value(), ""), NO_OUTPUT_TEXT), startTime);
+                                    return success(createOutput(js, event, outputStorage), startTime);
                                 } else {
                                     humanNewlinesProcessed += newlinesInString(completionInfo.source());
                                     break;
@@ -133,8 +132,7 @@ public class Evaluator {
             }
 
             // If we didn't return anything by the time we got here, just return this..
-            var output = StringUtils.defaultIfBlank(outputStorage.toString(StandardCharsets.UTF_8), "");
-            return success(StringUtils.defaultIfBlank(output, NO_OUTPUT_TEXT), startTime);
+            return success(createOutput(js, null, outputStorage), startTime);
         }
     }
 
@@ -201,6 +199,37 @@ public class Evaluator {
             return javadocs.stream().map(DocumentationResponse::new).collect(toList());
         }
     }
+
+    /**
+     * Prepares the output to return to the caller after an evaluation is done.
+     * @param js The JShell instance in which the script was being evaluated
+     * @param finalEvent The last processed event or null if there were no events
+     * @param executionOutput The captured output streams
+     * @return The compiled output
+     */
+    private String createOutput(JShell js, SnippetEvent finalEvent, ByteArrayOutputStream executionOutput) {
+        var output = StringUtils.defaultIfBlank(executionOutput.toString(StandardCharsets.UTF_8), "");
+        var eventValue = StringUtils.defaultIfBlank(finalEvent == null ? null : finalEvent.value(), "");
+
+        // unquote plain strings - we are much more interested in plain results than in knowing the last variable
+        // was _exactly_ a String (esp. since this doesn't even trigger for any other CharSequence).
+        if (eventValue.startsWith("\"") && eventValue.endsWith("\"") && eventValue.length() > 1 && finalEvent.snippet() != null) {
+            String lastType = null;
+            if (finalEvent.snippet().kind() == Snippet.Kind.VAR) {
+                lastType = ((VarSnippet)finalEvent.snippet()).typeName();
+            }
+            if (finalEvent.snippet().kind() == Snippet.Kind.EXPRESSION) {
+                lastType = ((ExpressionSnippet)finalEvent.snippet()).typeName();
+            }
+
+            if ("String".equals(lastType)) {
+                eventValue = StringEscapeUtils.unescapeJava(eventValue.substring(1, eventValue.length() - 1));
+            }
+        }
+
+        return StringUtils.defaultIfBlank(output + eventValue, NO_OUTPUT_TEXT);
+    }
+
 
     /**
      * Create a human readable error description.

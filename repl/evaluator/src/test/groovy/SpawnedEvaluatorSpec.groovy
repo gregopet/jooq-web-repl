@@ -62,11 +62,11 @@ class SpawnedEvaluatorSpec extends Specification {
         expect: 'standard output to be captured'
         eval.evaluate(null, new EvaluationRequest('System.out.print("haha")', 0)).output == 'haha'
         eval.evaluate(null, new EvaluationRequest('System.out.println("haha")', 0)).output == 'haha\n'
-        eval.evaluate(null, new EvaluationRequest('System.out.println("haha");"lala"', 0)).output == 'haha\n"lala"'
+        eval.evaluate(null, new EvaluationRequest('System.out.println("haha");"lala"', 0)).output == 'haha\nlala'
 
         and: 'standard error to be captured'
         eval.evaluate(null, new EvaluationRequest('System.err.print("haha")', 0)).output == 'haha'
         eval.evaluate(null, new EvaluationRequest('System.err.println("haha")', 0)).output == 'haha\n'
-        eval.evaluate(null, new EvaluationRequest('System.err.println("haha");"lala"', 0)).output == 'haha\n"lala"'
+        eval.evaluate(null, new EvaluationRequest('System.err.println("haha");"lala"', 0)).output == 'haha\nlala'
     }
 }

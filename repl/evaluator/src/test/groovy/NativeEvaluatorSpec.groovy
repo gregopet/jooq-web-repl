@@ -38,7 +38,7 @@ class NativeEvaluatorSpec extends Specification {
         def eval = Evaluator.local()
 
         expect: 'neither standard output nor standard error to be captured'
-        eval.evaluate(null, new EvaluationRequest('System.out.print("haha");"lala"', 0)).output == '"lala"'
-        eval.evaluate(null, new EvaluationRequest('System.err.print("haha");"lala"', 0)).output == '"lala"'
+        eval.evaluate(null, new EvaluationRequest('System.out.print("haha");"lala"', 0)).output == 'lala'
+        eval.evaluate(null, new EvaluationRequest('System.err.print("haha");"lala"', 0)).output == 'lala'
     }
 }

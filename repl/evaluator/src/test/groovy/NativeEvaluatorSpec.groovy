@@ -1,6 +1,7 @@
 import co.petrin.EvaluationRequest
 import co.petrin.Evaluator
 import spock.lang.Specification
+import spock.lang.Timeout
 
 
 class NativeEvaluatorSpec extends Specification {
@@ -40,5 +41,24 @@ class NativeEvaluatorSpec extends Specification {
         expect: 'neither standard output nor standard error to be captured'
         eval.evaluate(null, new EvaluationRequest('System.out.print("haha");"lala"', 0)).output == 'lala'
         eval.evaluate(null, new EvaluationRequest('System.err.print("haha");"lala"', 0)).output == 'lala'
+    }
+
+    @Timeout(10)
+    def "Evaluation can be stopped"() {
+        given: 'an evaluator that will get closed after 5 seconds'
+        def eval = Evaluator.local()
+        Thread.start {
+            Thread.sleep(5000)
+            eval.stop()
+        }
+
+        when: 'running an infite loop in the evaluator'
+        eval.evaluate(null, new EvaluationRequest("while(true) { java.lang.Thread.sleep(1000); }", 0))
+
+        then: 'evaluation is interrupted'
+        true
+
+        and: 'calling stop again does not break anything'
+        eval.stop()
     }
 }

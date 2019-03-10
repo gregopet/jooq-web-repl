@@ -69,4 +69,23 @@ class SpawnedEvaluatorSpec extends Specification {
         eval.evaluate(null, new EvaluationRequest('System.err.println("haha")', 0)).output == 'haha\n'
         eval.evaluate(null, new EvaluationRequest('System.err.println("haha");"lala"', 0)).output == 'haha\nlala'
     }
+
+    @Timeout(10)
+    def "Evaluation can be stopped"() {
+        given: 'an evaluator that will get closed after 5 seconds'
+        def eval = Evaluator.spawn(null)
+        Thread.start {
+            Thread.sleep(5000)
+            eval.stop()
+        }
+
+        when: 'running an infite loop in the evaluator'
+        eval.evaluate(null, new EvaluationRequest("while(true) { java.lang.Thread.sleep(1000); }", 0))
+
+        then: 'evaluation is interrupted'
+        true
+
+        and: 'calling stop again does not break anything'
+        eval.stop()
+    }
 }

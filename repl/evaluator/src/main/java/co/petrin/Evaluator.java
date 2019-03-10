@@ -20,6 +20,8 @@ import static java.util.stream.Collectors.toList;
 /**
  * A class that evaluates user submitted scripts with some pre-prepared variables, such as
  * a jOOQ connection.
+ *
+ * Evaluator instances are not thread safe.
  */
 public class Evaluator {
 
@@ -35,6 +37,11 @@ public class Evaluator {
      * The extra classpath entries to provide remote evaluation engines with.
      */
     private final List<String> extraClasspath;
+
+    /**
+     * The currently active shell. Usage of this variable makes the class non thread safe.
+     */
+    private JShell activeShell;
 
     /**
      * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
@@ -75,13 +82,14 @@ public class Evaluator {
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         var outputStorage = new ByteArrayOutputStream();
-        try (var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8); var js = buildJShell(ps)) {
+        try (var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8)) {
+            activeShell = buildJShell(ps);
 
-            addImports(js, db);
+            addImports(activeShell, db);
 
             // jooq connection
             if (db != null) {
-                var connectionEvent = runSingleSnippet(js, String.format(
+                var connectionEvent = runSingleSnippet(activeShell, String.format(
                         "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                         javaString(db.connectionString),
                         javaString(db.user),
@@ -89,7 +97,7 @@ public class Evaluator {
                 ));
 
                 if (connectionEvent.status() != Snippet.Status.VALID) {
-                    return setupError("Error creating a database object:\n" + formatParsingError(0, js, connectionEvent));
+                    return setupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
                 } else if (connectionEvent.exception() != null) {
                     return setupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
                 }
@@ -104,8 +112,8 @@ public class Evaluator {
                 final SnippetEvent event;
                 try {
                     String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
-                    completionInfo = js.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
-                    event = runSingleSnippet(js, completionInfo.source());
+                    completionInfo = activeShell.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
+                    event = runSingleSnippet(activeShell, completionInfo.source());
                 } catch (Throwable t) {
                     return jshellError(t);
                 }
@@ -117,14 +125,14 @@ public class Evaluator {
                                 return error(printEvalException(event), startTime);
                             } else {
                                 if (isProcessingComplete(completionInfo)) {
-                                    return success(createOutput(js, event, outputStorage), startTime);
+                                    return success(createOutput(activeShell, event, outputStorage), startTime);
                                 } else {
                                     humanNewlinesProcessed += newlinesInString(completionInfo.source());
                                     break;
                                 }
                             }
                         case REJECTED:
-                            return parseError(formatParsingError(humanNewlinesProcessed, js, event));
+                            return parseError(formatParsingError(humanNewlinesProcessed, activeShell, event));
                         default:
                             throw new IllegalStateException("This state was not programmed for, blame the programmer!");
                     }
@@ -132,7 +140,12 @@ public class Evaluator {
             }
 
             // If we didn't return anything by the time we got here, just return this..
-            return success(createOutput(js, null, outputStorage), startTime);
+            return success(createOutput(activeShell, null, outputStorage), startTime);
+        } finally {
+          if (activeShell != null) {
+              activeShell.close();
+              activeShell = null;
+          }
         }
     }
 
@@ -149,10 +162,11 @@ public class Evaluator {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
-        try (var js = buildJShell(null)) {
-            addImports(js, db);
+        try {
+            activeShell = buildJShell(null);
+            addImports(activeShell, db);
             if (db != null) {
-                runSingleSnippet(js, String.format(
+                runSingleSnippet(activeShell, String.format(
                     "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                     javaString(db.connectionString),
                     javaString(db.user),
@@ -160,10 +174,15 @@ public class Evaluator {
                 ));
             }
             int[] anchor = new int[1];
-            var amendedRequest = trimEvaluationRequest(js, request);
+            var amendedRequest = trimEvaluationRequest(activeShell, request);
             var anchorOffset = request.getCursorPosition() - amendedRequest.getCursorPosition();
-            var suggestions = js.sourceCodeAnalysis().completionSuggestions(amendedRequest.getScript(), amendedRequest.getCursorPosition(), anchor);
+            var suggestions = activeShell.sourceCodeAnalysis().completionSuggestions(amendedRequest.getScript(), amendedRequest.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0] + anchorOffset, suggestions);
+        } finally {
+            if (activeShell != null) {
+                activeShell.close();
+                activeShell = null;
+            }
         }
     }
 
@@ -176,27 +195,44 @@ public class Evaluator {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
-        try (var js = buildJShell(null)) {
-            addImports(js, db);
+        try {
+            activeShell = buildJShell(null);
+            addImports(activeShell, db);
             if (db != null) {
-                runSingleSnippet(js, String.format(
+                runSingleSnippet(activeShell, String.format(
                         "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
                         javaString(db.connectionString),
                         javaString(db.user),
                         javaString(db.password)
                 ));
             }
-            var amendedRequest = trimEvaluationRequest(js, request);
-            var javadocs = js.sourceCodeAnalysis().documentation(amendedRequest.getScript(), amendedRequest.getCursorPosition(), true);
+            var amendedRequest = trimEvaluationRequest(activeShell, request);
+            var javadocs = activeShell.sourceCodeAnalysis().documentation(amendedRequest.getScript(), amendedRequest.getCursorPosition(), true);
             if (javadocs.isEmpty()) {
                 // try to get the documentation for the class the expression had resolved to
-                var resolvedClass = js.sourceCodeAnalysis().analyzeType(amendedRequest.getScript(), amendedRequest.getCursorPosition());
+                var resolvedClass = activeShell.sourceCodeAnalysis().analyzeType(amendedRequest.getScript(), amendedRequest.getCursorPosition());
                 if (resolvedClass != null && !resolvedClass.isBlank()) {
-                    javadocs = js.sourceCodeAnalysis().documentation(resolvedClass, resolvedClass.length(), true);
+                    javadocs = activeShell.sourceCodeAnalysis().documentation(resolvedClass, resolvedClass.length(), true);
                 }
             }
 
             return javadocs.stream().map(DocumentationResponse::new).collect(toList());
+        } finally {
+            if (activeShell != null) {
+                activeShell.close();
+                activeShell = null;
+            }
+        }
+    }
+
+    /**
+     * Tries to stop the currently active calculation. Whether stopping will succeed depends on the code being run
+     * and the underlying evaluator.
+     */
+    public void stop() {
+        JShell js = activeShell;
+        if (js != null) {
+            js.stop();
         }
     }
 

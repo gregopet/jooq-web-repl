@@ -61,7 +61,7 @@ run {
         DATABASE_POSTGRES_USER : 'postgres',
         DATABASE_POSTGRES_PASSWORD : '',
         DATABASE_POSTGRES_SCRIPT_PREFIX : 'import static org.jooq.impl.DSL.*; import org.jooq.impl.DSL; import static sakila.default_schema.Tables.*;',
-        EVALUATOR_CLASSPATH: "$buildDir/evaluatorRuntime $projectDir/../postgres /media/kingston_home/gregor/proj/jooq-web-repl/repl/evaluator/build/resources/test/cowsay-1.0.3.jar"
+        EVALUATOR_CLASSPATH: "$buildDir/evaluatorRuntime $projectDir/../postgres"
   ])
 }
 

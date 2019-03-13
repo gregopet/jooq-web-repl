@@ -68,15 +68,22 @@ const APP = (function() {
         .then( resp => {
             hideLoader();
             submitButton.disabled = false;
-            return resp.json();
-        })
-        .then( result => {
-            resultsArea.innerText = result.output;
-            resultsArea.classList.toggle('completed-with-error', result.error)
+            const contentType = resp.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return resp.json().then( result => {
+                    resultsArea.innerText = result.output;
+                    resultsArea.parentNode.classList.toggle('completed-with-error', result.error)
+                })
+            } else {
+                return resp.text().then( result => {
+                    resultsArea.innerText = "Unexpected response, server said: " + result;
+                    resultsArea.parentNode.classList.add('completed-with-error')
+                })
+            }
         })
         .catch ( err => {
             resultsArea.innerText = "Network error submitting query to server!\n" + err;
-            resultsArea.classList.add('completed-with-error')
+            resultsArea.parentNode.classList.add('completed-with-error')
         })
     }
 

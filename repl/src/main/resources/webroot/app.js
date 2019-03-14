@@ -63,7 +63,10 @@ const APP = (function() {
         showLoader();
         fetch(appendSelectedDatabasePrefix("/eval"), {
             method: 'POST',
-            body: JSON.stringify(getSnippet())
+            body: JSON.stringify(getSnippet()),
+            headers: {
+                "X-CSRF-TOKEN" : getCSRFFromCookie()
+            }
         })
         .then( resp => {
             hideLoader();
@@ -176,6 +179,12 @@ const APP = (function() {
         resultsLoader.style.display = "none";
     }
 
+    /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
+    function getCSRFFromCookie() {
+        var match = document.cookie.match(new RegExp('(^| )' + 'X-CSRF' + '=([^;]+)'));
+        if (match) return match[2]; else return "";
+    }
+
     return {
         /** The CodeMirror editor instance */
         getEditor: () => editor,
@@ -190,7 +199,10 @@ const APP = (function() {
         getSnippet: getSnippet,
 
         /** Gets the index of the current database from the selector */
-        appendSelectedDatabasePrefix: appendSelectedDatabasePrefix
+        appendSelectedDatabasePrefix: appendSelectedDatabasePrefix,
+
+        /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
+        getCSRFFromCookie: getCSRFFromCookie
     }
 })();
 

@@ -3,12 +3,15 @@ package co.petrin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CSRFHandler;
+import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import org.apache.commons.lang3.StringUtils;
 
@@ -26,6 +29,24 @@ public class WebInterface {
         );
 
         var router = Router.router(vertx);
+
+        // CSRF protection for /database (to protect POST requests) and / (to set the required cookies)
+        // ..think whether an option to disable this would be required? For demo purposes, no harm is done, but
+        // for connecting to a running application, it's critical!
+        // On the other hand, a running application would have to do this on its own anyway, unless it's embedding Vert.x
+        // and this class directly? Anyway, it's in for everyone now, may reconsider.
+        // An idea: allow the CSRF salt/secret be provided via environment variables, and if they're not there, no CSRF
+        // protection?
+        router.route().handler(CookieHandler.create()); //required for CSRF protection to work!
+        var csrfHandler = CSRFHandler.create("lkjLKJiuhGGKJHiuyYGNBMNBllLKJLKJOIJOIJLKJlkjhlnb93b3nbemnbdsf")
+            .setCookieName("X-CSRF")
+            .setCookiePath("/")
+            .setHeaderName("X-CSRF-TOKEN")
+            .setNagHttps(false);
+        router.routeWithRegex(HttpMethod.POST, "/databases/.*").handler(csrfHandler);
+        router.route(HttpMethod.GET, "/").handler(csrfHandler);
+
+
         router.mountSubRouter("/databases", new ScriptHandler().getRouter(vertx));
 
         router.route("/*").handler(

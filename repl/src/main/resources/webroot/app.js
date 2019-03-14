@@ -96,7 +96,10 @@ const APP = (function() {
     function suggest() {
         return fetch(appendSelectedDatabasePrefix("/suggest"), {
             method: 'POST',
-            body: JSON.stringify(getSnippet())
+            body: JSON.stringify(getSnippet()),
+            headers: {
+                "X-CSRF-TOKEN" : getCSRFFromCookie()
+            }
         })
         .then( resp => resp.json() )
         .then(mapSuggestions )

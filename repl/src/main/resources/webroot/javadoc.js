@@ -37,7 +37,10 @@ const JAVADOC = (function() {
     function javadoc() {
         return fetch(APP.appendSelectedDatabasePrefix("/javadoc"), {
             method: 'POST',
-            body: JSON.stringify(APP.getSnippet())
+            body: JSON.stringify(APP.getSnippet()),
+            headers: {
+                "X-CSRF-TOKEN" : APP.getCSRFFromCookie()
+            }
         })
         .then( resp => resp.json() )
         .then(docs => {

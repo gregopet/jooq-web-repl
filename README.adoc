@@ -17,7 +17,7 @@ docker-compose up
 (when you're running this for the first time, it may take a while while
 Docker and Gradle download all the dependencies)
 
-Then, point your browser to http://localhost:8000/ and try executing some
+Then, point your browser to http://127.0.0.1:8000/ and try executing some
 queries. Try `jooq.selectFrom(FILM).fetch()` for example. Take a look at
 https://dev.mysql.com/doc/sakila/en/sakila-structure.html[the Sakila schema]
 to get more ideas about queries to try. Look up 
@@ -55,6 +55,10 @@ REPL_COMPILE_DEPENDENCIES:: Whitespace-delimited list of Gradle package
 coordinates to use when building the REPL
 REPL_JOOQ_VERSION:: The jOOQ version to include into the REPL, defaults to
 3.11.9
+REPL_CSRF_SECRET:: If given, it will be used as a secret seed for CSRF
+protection tokens - note that you _have_ to use `127.0.0.1` instead of 
+`localhost` when running a local container with CSRF protection! If not given,
+no CSRF protection will be applied.
 
 [[generating-jooq-model]]
 === Generating the jOOQ model during build

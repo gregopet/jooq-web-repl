@@ -30,22 +30,17 @@ public class WebInterface {
 
         var router = Router.router(vertx);
 
-        // CSRF protection for /database (to protect POST requests) and / (to set the required cookies)
-        // ..think whether an option to disable this would be required? For demo purposes, no harm is done, but
-        // for connecting to a running application, it's critical!
-        // On the other hand, a running application would have to do this on its own anyway, unless it's embedding Vert.x
-        // and this class directly? Anyway, it's in for everyone now, may reconsider.
-        // An idea: allow the CSRF salt/secret be provided via environment variables, and if they're not there, no CSRF
-        // protection?
-        router.route().handler(CookieHandler.create()); //required for CSRF protection to work!
-        var csrfHandler = CSRFHandler.create("lkjLKJiuhGGKJHiuyYGNBMNBllLKJLKJOIJOIJLKJlkjhlnb93b3nbemnbdsf")
-            .setCookieName("X-CSRF")
-            .setCookiePath("/")
-            .setHeaderName("X-CSRF-TOKEN")
-            .setNagHttps(false);
-        router.routeWithRegex(HttpMethod.POST, "/databases/.*").handler(csrfHandler);
-        router.route(HttpMethod.GET, "/").handler(csrfHandler);
-
+        if (System.getenv("REPL_CSRF_SECRET") != null) {
+            // CSRF protection for /database (to protect POST requests) and / (to set the required cookies)
+            router.route().handler(CookieHandler.create()); //required for CSRF protection to work!
+            var csrfHandler = CSRFHandler.create(System.getenv("REPL_CSRF_SECRET"))
+                .setCookieName("X-CSRF")
+                .setCookiePath("/")
+                .setHeaderName("X-CSRF-TOKEN")
+                .setNagHttps(false);
+            router.routeWithRegex(HttpMethod.POST, "/databases/.*").handler(csrfHandler);
+            router.route(HttpMethod.GET, "/").handler(csrfHandler);
+        }
 
         router.mountSubRouter("/databases", new ScriptHandler().getRouter(vertx));
 

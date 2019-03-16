@@ -30,6 +30,7 @@ subprojects {
     jcenter()
   }
 }
+apply plugin: 'groovy' // required for Spock tests only
 
 repositories {
   jcenter()
@@ -41,6 +42,12 @@ dependencies {
   compile project(":evaluator")
   compile "io.vertx:vertx-core:$vertxVersion"
   compile "io.vertx:vertx-web:$vertxVersion"
+
+    // Spock & testcontainers
+    testCompile "org.codehaus.groovy:groovy-all:2.4.15"
+    testCompile "org.spockframework:spock-core:1.2-groovy-2.4"
+    testCompile "org.testcontainers:testcontainers:1.10.6"
+    testCompile 'io.vertx:vertx-web-client:3.6.3'
 }
 
 mainClassName = 'co.petrin.WebInterface'
@@ -76,6 +83,12 @@ task copyEvaluatorDependencies(type: Copy, description: "Copies Evaluator's depe
 }
 
 tasks.compileJava.dependsOn copyEvaluatorDependencies
+
+test {
+    // Make it easier to find the Dockerfile in tests
+    systemProperties.projectDir = projectDir
+    systemProperties['vertx.disableDnsResolver'] = true
+}
 
 
 task('jooqModels', description: "Generate jOOQ schemas for any databases configured to do so") {

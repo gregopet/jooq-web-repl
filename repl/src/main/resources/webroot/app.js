@@ -6,11 +6,11 @@ function htmlEncode( html ) {
 /**
  * Constructs an instance of the REPL editor. The constructor can be called with an initialization object to set up
  * the editor. It accepts the following properties:
+ *   - textArea (required): A textarea on which to initialize CodeMirror, given as a DOM element
  *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
  *     will always be run without a database
  */
 const APP = (function(config) {
-    config = config || {}
 
     const resultsPane = document.getElementById('results-pane');
     const resultsArea = document.querySelector("#results-pane pre");
@@ -22,6 +22,8 @@ const APP = (function(config) {
     const commandArea = document.querySelector('.command-area');
 
     var editor = null; // CodeMirror instance
+    if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
+
     init();
 
     function init() {
@@ -133,7 +135,7 @@ const APP = (function(config) {
     }
     
     function initCodemirror() {
-        editor = CodeMirror.fromTextArea(document.querySelector('#script-content'), {
+        editor = CodeMirror.fromTextArea(config.textArea, {
             lineNumbers: true,
             mode: { name: "clike" },
             extraKeys: {"Ctrl-Space": "autocomplete"},
@@ -201,6 +203,7 @@ const APP = (function(config) {
 
 document.addEventListener("DOMContentLoaded", function(event) {
     const editor = APP({
+        textArea: document.querySelector('#script-content'),
         databaseProvider: DatabaseChooser(document.querySelector("#database-select"))
     });
     Javadoc(editor);

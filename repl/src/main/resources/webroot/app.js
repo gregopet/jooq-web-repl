@@ -3,8 +3,14 @@ function htmlEncode( html ) {
     return document.createElement( 'a' ).appendChild(document.createTextNode( html ) ).parentNode.innerHTML;
 };
 
-
-const APP = (function() {
+/**
+ * Constructs an instance of the REPL editor. The constructor can be called with an initialization object to set up
+ * the editor. It accepts the following properties:
+ *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
+ *     will always be run without a database
+ */
+const APP = (function(config) {
+    config = config || {}
 
     const resultsPane = document.getElementById('results-pane');
     const resultsArea = document.querySelector("#results-pane pre");
@@ -22,7 +28,6 @@ const APP = (function() {
         completeButton.addEventListener("click", () => editor.showHint());
         helpShowButton.addEventListener("click", showCommandArea);
         helpCloseButton.addEventListener("click", closeCommandArea);
-        fetchDatabases();
         catchGlobalShortcuts();
         initCodemirror();
     }
@@ -35,24 +40,8 @@ const APP = (function() {
         })
     }
 
-    function fetchDatabases() {
-        fetch("/databases")
-        .then( resp => {
-            return resp.json();
-        })
-        .then( databases => {
-            const selector = document.querySelector("#database-select")
-            for (var db in databases) {
-                selector.options.add(new Option(databases[db], db));
-                if (selector.value === "") {
-                    selector.value = db;
-                }
-            }
-        })
-    }
-
     function appendSelectedDatabasePrefix(endpoint) {
-        let database = document.querySelector("#database-select").value
+        let database = config.databaseProvider != null ? config.databaseProvider() : null;
         if (database) return "/databases/" + database + endpoint;
         else return "/databases" + endpoint;
     }
@@ -207,8 +196,10 @@ const APP = (function() {
         /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
         getCSRFFromCookie: getCSRFFromCookie
     }
-})();
+});
 
 document.addEventListener("DOMContentLoaded", function(event) {
-    APP.init();
+    APP({
+        databaseProvider: DatabaseChooser(document.querySelector("#database-select"))
+    }).init();
 });

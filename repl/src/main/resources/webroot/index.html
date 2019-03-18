@@ -13,6 +13,7 @@
         <script defer src="codemirror/clike.js"></script>
         <script defer src="codemirror/show-hint.js"></script>
         <script defer src="databaseProviders.js"></script>
+        <script defer src="hotkeyHints.js"></script>
         <script defer src="storage.js"></script>
         <script defer src="javadoc.js"></script>
         <script defer src="app.js"></script>
@@ -47,18 +48,7 @@
                             </button>
                         </div>
                         <div class="card-body">
-                            <p>
-                                <button id="submit-button" class="btn btn-sm btn-outline-dark"><span>Submit</span><kbd>Ctrl + Enter</kbd></button>
-                            </p>
-                            <p>
-                                <button id="complete-button" class="btn btn-sm btn-outline-dark"><span>Completion</span><kbd>Ctrl + Space</kbd></button>
-                            </p>
-                            <p>
-                                <button id="javadoc-button" class="btn btn-sm btn-outline-dark"><span>Docs</span><kbd class="shortcut">Ctrl + Q &nbsp; &nbsp;   </kbd></button>
-                            </p>
-                            <p>
-                                <button id="storage-area-toggle" class="btn btn-sm btn-outline-dark"><span>Storage</span><kbd class="shortcut">Ctrl + S &nbsp; &nbsp;   </kbd></button>
-                            </p>
+                            <ul id="shortcut-list" class="list-unstyled"></ul>
                         </div>
                     </div>
                 </div>

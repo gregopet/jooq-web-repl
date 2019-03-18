@@ -9,38 +9,50 @@ function htmlEncode( html ) {
  *   - textArea (required): A textarea on which to initialize CodeMirror, given as a DOM element
  *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
  *     will always be run without a database
+ *   - commandCheatSheet: a cheatsheet implementation (see relevant JS file)
  */
 const APP = (function(config) {
+
+    if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
 
     const resultsPane = document.getElementById('results-pane');
     const resultsArea = document.querySelector("#results-pane pre");
     const resultsLoader = document.querySelector("#results-pane > .loader");
-    const submitButton = document.querySelector('#submit-button');
-    const completeButton = document.querySelector('#complete-button');
-    const helpShowButton = document.querySelector('#command-area-show');
-    const helpCloseButton = document.getElementById('command-area-close');
-    const commandArea = document.querySelector('.command-area');
 
-    var editor = null; // CodeMirror instance
-    if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
+    const submitButton = registerShortcut({ctrl: true, key: 'Enter', hint: 'Submit', action: () => { eval() } });
+    var editor = initCodemirror(); // CodeMirror instance
 
-    init();
 
-    function init() {
-        submitButton.addEventListener("click", eval);
-        completeButton.addEventListener("click", () => editor.showHint());
-        helpShowButton.addEventListener("click", showCommandArea);
-        helpCloseButton.addEventListener("click", closeCommandArea);
-        catchGlobalShortcuts();
-        initCodemirror();
-    }
 
-    function catchGlobalShortcuts() {
+    /**
+     * Registers a shortcut, inserting a hint into the cheatsheet if one was provided.
+     * The parameter is an object with the following parameters:
+     *   - key (required): the key that will be matched to event.key properties
+     *   - alt: if true, the shortcut will require ALT to be pressed
+     *   - ctrl: if true, the shortcut will require CTRL to be pressed
+     *   - shift: if true, the shortcut will require SHIFT to be pressed
+     *   - hint: The name of this shortcut to display as a hint. If not given, command will not be registered in the
+     *     cheat sheet.
+     *   - action: a function to perform when this shortcut is invoked
+     *
+     * Returns the created button or null if no button was created.
+     */
+    function registerShortcut(key) {
+        // TODO: which DOM element to register the key on?
+        const lcaseKey = key.key.toLowerCase();
+        const ucaseKey = key.key.toUpperCase();
+
         document.addEventListener("keydown", ev => {
-            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key == "Enter") {
-                eval();
+            if (ev.ctrlKey == !!key.ctrl && ev.altKey == !!key.alt && ev.shiftKey == !!key.shift) {
+                if (ev.key == key.key || ev.key == lcaseKey || ev.key == ucaseKey) {
+                    if (ev.preventDefault) ev.preventDefault();
+                    key.action();
+                }
             }
-        })
+        });
+        if (config.commandCheatSheet) {
+            return config.commandCheatSheet.addShortcut(key.ctrl, key.alt, key.shift, key.key, key.hint, key.action);
+        }
     }
 
     function appendSelectedDatabasePrefix(endpoint) {
@@ -50,7 +62,7 @@ const APP = (function(config) {
     }
 
     function eval() {
-        submitButton.disabled = true;
+        if (submitButton) submitButton.disabled = true;
 
         showLoader();
         fetch(appendSelectedDatabasePrefix("/eval"), {
@@ -62,7 +74,7 @@ const APP = (function(config) {
         })
         .then( resp => {
             hideLoader();
-            submitButton.disabled = false;
+            if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 return resp.json().then( result => {
@@ -135,7 +147,7 @@ const APP = (function(config) {
     }
     
     function initCodemirror() {
-        editor = CodeMirror.fromTextArea(config.textArea, {
+        let cmEditor = CodeMirror.fromTextArea(config.textArea, {
             lineNumbers: true,
             mode: { name: "clike" },
             extraKeys: {"Ctrl-Space": "autocomplete"},
@@ -144,19 +156,14 @@ const APP = (function(config) {
                 completeSingle: false
             }
         });
+        if (config.commandCheatSheet) {
+            config.commandCheatSheet.addShortcut(true, false, false, "Space", "Completion", () => { cmEditor.showHint() })
+        }
 
         // let layouting do its magic and then redraw the editor to avoid weird issues like an ultra-thin editor
-        window.setTimeout(() => editor.refresh(), 300);
-    }
+        window.setTimeout(() => cmEditor.refresh(), 300);
 
-
-    function showCommandArea() {
-        commandArea.style.display = "block";
-        helpShowButton.style.display = "none"
-    }
-    function closeCommandArea() {
-        commandArea.style.display = "none";
-        helpShowButton.style.display = "block"
+        return cmEditor;
     }
 
     /**
@@ -184,9 +191,6 @@ const APP = (function(config) {
         /** The CodeMirror editor instance */
         getEditor: () => editor,
 
-        /** The initialization function called on DOM load */
-        init: init,
-
         /** The main container for evaluation results */
         resultsPane: resultsPane,
 
@@ -197,14 +201,34 @@ const APP = (function(config) {
         appendSelectedDatabasePrefix: appendSelectedDatabasePrefix,
 
         /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
-        getCSRFFromCookie: getCSRFFromCookie
+        getCSRFFromCookie: getCSRFFromCookie,
+
+        registerShortcut: registerShortcut
     }
 });
 
 document.addEventListener("DOMContentLoaded", function(event) {
+
+    // A closeable command area
+    const commandArea = document.querySelector('.command-area');
+    const helpShowButton = document.querySelector('#command-area-show');
+    const helpCloseButton = document.getElementById('command-area-close');
+    helpShowButton.addEventListener("click", showCommandArea);
+    helpCloseButton.addEventListener("click", closeCommandArea);
+    function showCommandArea() {
+        commandArea.style.display = "block";
+        helpShowButton.style.display = "none"
+    }
+    function closeCommandArea() {
+        commandArea.style.display = "none";
+        helpShowButton.style.display = "block"
+    }
+
+    // The editor itself
     const editor = APP({
         textArea: document.querySelector('#script-content'),
-        databaseProvider: DatabaseChooser(document.querySelector("#database-select"))
+        databaseProvider: DatabaseChooser(document.querySelector("#database-select")),
+        commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list'))
     });
     Javadoc(editor);
     Storage(editor);

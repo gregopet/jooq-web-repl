@@ -14,7 +14,6 @@ const Storage = (function(editor) {
     init();
 
     function init() {
-        document.getElementById("storage-area-toggle").addEventListener("click", toggleDialog)
         document.addEventListener("keydown", ev => {
             if (ev.key == "Escape") {
                 closeDialog();
@@ -24,16 +23,8 @@ const Storage = (function(editor) {
         deleteButton.addEventListener("click", deleteCurrentSnippet);
         renameButton.addEventListener("click", renameCurrentSnippet);
         snippetReplaceButton.addEventListener("click", sendSnippetToEditor);
-        catchGlobalShortcuts();
-    }
 
-    function catchGlobalShortcuts() {
-        document.addEventListener("keydown", ev => {
-            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && (ev.key == "s" || ev.key == "S")) {
-                toggleDialog();
-                if (ev.preventDefault) ev.preventDefault();
-            }
-        });
+        editor.registerShortcut({ ctrl: true, key: "S", hint: "Storage", action: () => toggleDialog() });
     }
 
     function getSnippetsFromStorage() {

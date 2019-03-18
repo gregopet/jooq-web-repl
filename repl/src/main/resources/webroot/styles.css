@@ -89,13 +89,20 @@ html, body, .full-height {
     background-color: white;
     z-index: 4; /* Appear over codemirror! */
 }
-#query-pane .command-area .card-body button {
+#query-pane .command-area .card-body ul button {
     /** Flex instead of float: right, much more robust */
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 1em;
 }
+
+#query-pane .command-area .card-body ul kbd {
+    width: 8em;
+    text-align: left;
+}
+
 #query-pane .command-area .card-body kbd {
     margin-left: 2em;
 }

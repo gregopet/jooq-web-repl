@@ -6,7 +6,6 @@ const Javadoc = (function(editor) {
     const javadocDialog = document.querySelector('#documentation-dialog');
     const javadocDialogSignature = document.querySelector('#documentation-dialog-signature');
     const javadocDialogDocumentation = document.querySelector('#documentation-dialog-documentation');
-    const javadocButton = document.querySelector('#javadoc-button');
 
     let latestJavadocs = [];
     let currentJavadocIndex = 0;
@@ -14,17 +13,14 @@ const Javadoc = (function(editor) {
     init();
 
     function init() {
-        javadocButton.addEventListener("click",  javadoc);
-        catchGlobalShortcuts();
+        editor.registerShortcut({ ctrl: true, key: 'Q', hint: 'Docs', action: () => javadoc()})
+        catchGlobalShortcuts()
     }
 
     function catchGlobalShortcuts() {
         document.addEventListener("keydown", ev => {
             if (ev.key == "Escape") {
                 closeJavadocs();
-            }
-            if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && (ev.key == "q" || ev.key == "Q")) {
-                javadoc();
             }
             if (ev.key == "ArrowRight" && areJavadocsOpen()) {
                 openJavadocs(1);

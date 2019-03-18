@@ -203,5 +203,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     const editor = APP({
         databaseProvider: DatabaseChooser(document.querySelector("#database-select"))
     });
+    Javadoc(editor);
     Storage(editor);
 });

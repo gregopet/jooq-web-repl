@@ -1,7 +1,7 @@
 /**
  * Handles the logic of fetching Javadocs for selected class or method and displaying them in a Bootstrap dialog.
  */
-const JAVADOC = (function() {
+const Javadoc = (function(editor) {
 
     const javadocDialog = document.querySelector('#documentation-dialog');
     const javadocDialogSignature = document.querySelector('#documentation-dialog-signature');
@@ -10,6 +10,8 @@ const JAVADOC = (function() {
 
     let latestJavadocs = [];
     let currentJavadocIndex = 0;
+
+    init();
 
     function init() {
         javadocButton.addEventListener("click",  javadoc);
@@ -35,11 +37,11 @@ const JAVADOC = (function() {
 
     /** Fetches javadocs for the current code position and displays them, storing unopened ones on the DOM element */
     function javadoc() {
-        return fetch(APP.appendSelectedDatabasePrefix("/javadoc"), {
+        return fetch(editor.appendSelectedDatabasePrefix("/javadoc"), {
             method: 'POST',
-            body: JSON.stringify(APP.getSnippet()),
+            body: JSON.stringify(editor.getSnippet()),
             headers: {
-                "X-CSRF-TOKEN" : APP.getCSRFFromCookie()
+                "X-CSRF-TOKEN" : editor.getCSRFFromCookie()
             }
         })
         .then( resp => resp.json() )
@@ -80,20 +82,11 @@ const JAVADOC = (function() {
     function closeJavadocs() {
         if (areJavadocsOpen) {
             javadocDialog.style.display = "none";
-            APP.getEditor().focus()
+            editor.getEditor().focus()
         }
     }
     /** Queries whether javadocs are currently open */
     function areJavadocsOpen() {
         return javadocDialog.style.display == "block";
     }
-
-    return {
-        init: init
-    }
-
-})();
-
-document.addEventListener("DOMContentLoaded", function(event) {
-    JAVADOC.init();
 });

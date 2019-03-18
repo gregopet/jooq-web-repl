@@ -2,7 +2,7 @@
  * Stores snippets in the local storage.
  * Each snippet has three properties: name, content and id (ID is randomly generated upon snippet insertion)
  */
-const STORAGE = (function() {
+const Storage = (function(editor) {
     const dialog = document.getElementById("storage-dialog");
     const snippetNames = document.getElementById("snippet-listing-names");
     const previewContent = document.getElementById("snippet-preview-content");
@@ -10,6 +10,8 @@ const STORAGE = (function() {
     const deleteButton = document.getElementById("snippet-delete");
     const renameButton = document.getElementById("snippet-rename");
     const addButton = document.getElementById("snippet-add");
+
+    init();
 
     function init() {
         document.getElementById("storage-area-toggle").addEventListener("click", toggleDialog)
@@ -44,7 +46,7 @@ const STORAGE = (function() {
     }
 
     function copyEditorToSnippet() {
-        let snippetContent = APP.getEditor().getValue();
+        let snippetContent = editor.getEditor().getValue();
 
         let name = window.prompt("Enter a name for this snippet:");
         if (name) {
@@ -118,7 +120,7 @@ const STORAGE = (function() {
 
     function sendSnippetToEditor() {
         let snippet = previewContent.innerText;
-        APP.getEditor().setValue(snippet);
+        editor.getEditor().setValue(snippet);
         closeDialog();
     }
 
@@ -134,12 +136,4 @@ const STORAGE = (function() {
     function closeDialog() {
         dialog.style.display = "none";
     }
-
-    return {
-        init: init
-    }
-})();
-
-document.addEventListener("DOMContentLoaded", function(event) {
-    STORAGE.init();
 });

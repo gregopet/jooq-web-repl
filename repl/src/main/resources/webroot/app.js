@@ -22,6 +22,7 @@ const APP = (function(config) {
     const commandArea = document.querySelector('.command-area');
 
     var editor = null; // CodeMirror instance
+    init();
 
     function init() {
         submitButton.addEventListener("click", eval);
@@ -199,7 +200,8 @@ const APP = (function(config) {
 });
 
 document.addEventListener("DOMContentLoaded", function(event) {
-    APP({
+    const editor = APP({
         databaseProvider: DatabaseChooser(document.querySelector("#database-select"))
-    }).init();
+    });
+    Storage(editor);
 });

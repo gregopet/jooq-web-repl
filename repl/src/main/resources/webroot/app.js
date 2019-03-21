@@ -10,14 +10,14 @@ function htmlEncode( html ) {
  *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
  *     will always be run without a database
  *   - commandCheatSheet: a cheatsheet implementation (see relevant JS file)
+ *   - onCommandExecutionStarted: A function to invoke when a command is run, to e.g. display a waiting indicator
+ *   - onCommandExecutionFinished: A function to invoke when a command run has finished; will be called with the result object
  */
 const APP = (function(config) {
 
     if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
 
-    const resultsPane = document.getElementById('results-pane');
     const resultsArea = document.querySelector("#results-pane pre");
-    const resultsLoader = document.querySelector("#results-pane > .loader");
 
     const submitButton = registerShortcut({ctrl: true, key: 'Enter', hint: 'Submit', action: () => { eval() } });
     var editor = initCodemirror(); // CodeMirror instance
@@ -64,7 +64,7 @@ const APP = (function(config) {
     function eval() {
         if (submitButton) submitButton.disabled = true;
 
-        showLoader();
+        if (config.onCommandExecutionStarted) config.onCommandExecutionStarted();
         fetch(appendSelectedDatabasePrefix("/eval"), {
             method: 'POST',
             body: JSON.stringify(getSnippet()),
@@ -73,7 +73,7 @@ const APP = (function(config) {
             }
         })
         .then( resp => {
-            hideLoader();
+            if (config.onCommandExecutionFinished) config.onCommandExecutionFinished(resp);
             if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -166,21 +166,6 @@ const APP = (function(config) {
         return cmEditor;
     }
 
-    /**
-     * Replaces the results screen with a loader.
-     * The loader overlays the results areas so we don't need to hide those.
-     */
-    function showLoader() {
-        resultsLoader.style.display = "block";
-    }
-
-    /**
-     * Shows the results pane again instead of the loader.
-     */
-    function hideLoader() {
-        resultsLoader.style.display = "none";
-    }
-
     /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
     function getCSRFFromCookie() {
         var match = document.cookie.match(new RegExp('(^| )' + 'X-CSRF' + '=([^;]+)'));
@@ -190,9 +175,6 @@ const APP = (function(config) {
     return {
         /** The CodeMirror editor instance */
         getEditor: () => editor,
-
-        /** The main container for evaluation results */
-        resultsPane: resultsPane,
 
         /** Gets the current contents and cursor position from the editor */
         getSnippet: getSnippet,
@@ -206,6 +188,30 @@ const APP = (function(config) {
         registerShortcut: registerShortcut
     }
 });
+
+/** Makes the splitter draggable and double-clickable */
+function createSplitter() {
+    const resultsPane = document.getElementById('results-pane');
+    const splitter = document.querySelector("#splitter");
+
+    var isMouseDown = false;
+    splitter.addEventListener("mousedown", () => isMouseDown = true);
+    document.addEventListener("mouseup", () => isMouseDown = false);
+    document.addEventListener("mousemove", (ev) => {
+        if (ev && isMouseDown && ev.offsetY) {
+            var dist = ev.clientY - resultsPane.offsetTop;
+            resultsPane.style['flex-basis'] = "" + (resultsPane.offsetHeight - dist) + "px";
+            resultsPane.style['flex-grow'] = "0";
+            if (ev.preventDefault) ev.preventDefault();
+        }
+    });
+
+    // go back to "neutral" size when double clicking on the splitter
+    document.addEventListener("dblclick", (ev) => {
+        resultsPane.style['flex-basis'] = "";
+        resultsPane.style['flex-grow'] = "0";
+    });
+}
 
 document.addEventListener("DOMContentLoaded", function(event) {
 
@@ -224,12 +230,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
         helpShowButton.style.display = "block"
     }
 
+    // The loading indicator
+    const resultsLoader = document.querySelector("#results-pane > .loader");
+
     // The editor itself
     const editor = APP({
         textArea: document.querySelector('#script-content'),
         databaseProvider: DatabaseChooser(document.querySelector("#database-select")),
-        commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list'))
+        commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list')),
+        onCommandExecutionStarted: () => { resultsLoader.style.display = 'block' },
+        onCommandExecutionFinished: () => { resultsLoader.style.display = 'none' }
     });
     Javadoc(editor);
     Storage(editor);
+
+    // The splitter between script & command panes
+    createSplitter();
+
 });

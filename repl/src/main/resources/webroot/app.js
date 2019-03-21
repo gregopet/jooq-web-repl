@@ -7,6 +7,8 @@ function htmlEncode( html ) {
  * Constructs an instance of the REPL editor. The constructor can be called with an initialization object to set up
  * the editor. It accepts the following properties:
  *   - textArea (required): A textarea on which to initialize CodeMirror, given as a DOM element
+ *   - resultsPane (required): whatever will display our results. Needs to support 3 methods: normally,
+ *     serverError and networkError (see PreResultsPane for details).
  *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
  *     will always be run without a database
  *   - commandCheatSheet: a cheatsheet implementation (see relevant JS file)
@@ -16,13 +18,10 @@ function htmlEncode( html ) {
 const APP = (function(config) {
 
     if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
-
-    const resultsArea = document.querySelector("#results-pane pre");
+    if (!config.resultsPane) throw "No results pane for REPL initialization!";
 
     const submitButton = registerShortcut({ctrl: true, key: 'Enter', hint: 'Submit', action: () => { eval() } });
     var editor = initCodemirror(); // CodeMirror instance
-
-
 
     /**
      * Registers a shortcut, inserting a hint into the cheatsheet if one was provided.
@@ -77,21 +76,12 @@ const APP = (function(config) {
             if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
-                return resp.json().then( result => {
-                    resultsArea.innerText = result.output;
-                    resultsArea.parentNode.classList.toggle('completed-with-error', result.error)
-                })
+                return resp.json().then( result => config.resultsPane.normally(result));
             } else {
-                return resp.text().then( result => {
-                    resultsArea.innerText = "Unexpected response, server said: " + result;
-                    resultsArea.parentNode.classList.add('completed-with-error')
-                })
+                return resp.text().then( result => config.resultsPane.serverError(result, resp.status));
             }
         })
-        .catch ( err => {
-            resultsArea.innerText = "Network error submitting query to server!\n" + err;
-            resultsArea.parentNode.classList.add('completed-with-error')
-        })
+        .catch ( err => config.resultsPane.networkError(err));
     }
 
     /**
@@ -236,6 +226,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     // The editor itself
     const editor = APP({
         textArea: document.querySelector('#script-content'),
+        resultsPane: PreResultsPane(document.querySelector("#results-pane pre")),
         databaseProvider: DatabaseChooser(document.querySelector("#database-select")),
         commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list')),
         onCommandExecutionStarted: () => { resultsLoader.style.display = 'block' },

@@ -1,3 +1,8 @@
+// helper functions - also used by later scripts!
+function htmlEncode( html ) {
+    return document.createElement( 'a' ).appendChild(document.createTextNode( html ) ).parentNode.innerHTML;
+};
+
 /**
  * Handles the logic of fetching Javadocs for selected class or method and displaying them in a Bootstrap dialog.
  */

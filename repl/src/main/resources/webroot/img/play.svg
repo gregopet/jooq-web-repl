@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 314.0683 314.06458"
+   id="svg3788"
+   sodipodi:docname="play.svg"
+   width="314.0683"
+   height="314.06458"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14">
+  <defs
+     id="defs3792" />
+<g class="play">
+  <path d="m 293.00194,78.528193 c -43.356,-75.0949995 -139.384,-100.826 -214.473,-57.462 -75.0950004,43.35 -100.827,139.373997 -57.463,214.465997 43.35,75.095 139.375,100.83 214.465,57.47 75.096,-43.365 100.84,-139.384 57.471,-214.473997 z m -73.168,187.270997 c -60.067,34.692 -136.894,14.106 -171.576,-45.973 -34.69,-60.067 -14.097,-136.892997 45.972,-171.567997 60.071,-34.69 136.894,-14.106 171.578,45.971 34.685,60.075997 14.098,136.885997 -45.974,171.569997 z m -6.279,-115.149 -82.214,-47.949 c -7.492,-4.373997 -13.535,-0.877 -13.493,7.789 l 0.421,95.174 c 0.038,8.664 6.155,12.191 13.669,7.851 l 81.585,-47.103 c 7.506,-4.332 7.522,-11.388 0.032,-15.762 z"  fill="#ffffff" />
+  </g>
+</svg>

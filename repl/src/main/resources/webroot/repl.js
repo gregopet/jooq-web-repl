@@ -6,17 +6,29 @@
  *     serverError and networkError (see PreResultsPane for details).
  *   - databaseProvider: a function we can call without parameters to get a database index. If not provided, scripts
  *     will always be run without a database
+ *   - submitButton: the button to run the evaluation, if there is an external one. When not given, the editor will try
+ *     to create its own submit button using "registerShortcut".
  *   - commandCheatSheet: a cheatsheet implementation (see relevant JS file)
  *   - onCommandExecutionStarted: A function to invoke when a command is run, to e.g. display a waiting indicator
  *   - onCommandExecutionFinished: A function to invoke when a command run has finished; will be called with the result object
+ *   - keyboardShortcutRoot: if given, keyboard shortcuts will be listened to at this element. Otherwise, they will be registered
+ *     on document.
  */
 const Repl = (function(config) {
 
     if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
     if (!config.resultsPane) throw "No results pane for REPL initialization!";
 
-    const submitButton = registerShortcut({ctrl: true, key: 'Enter', hint: 'Submit', action: () => { eval() } });
+    let submitButton = registerShortcut({
+        ctrl: true, 
+        key: 'Enter', 
+        hint: 'Submit', 
+        action: () => { eval() }, 
+        triggerOnNode: config.submitButton 
+    });
     var editor = initCodemirror(); // CodeMirror instance
+    
+    let executionInProgress = false;
 
     /**
      * Registers a shortcut, inserting a hint into the cheatsheet if one was provided.
@@ -28,6 +40,8 @@ const Repl = (function(config) {
      *   - hint: The name of this shortcut to display as a hint. If not given, command will not be registered in the
      *     cheat sheet.
      *   - action: a function to perform when this shortcut is invoked
+     *   - triggerOnNode: if a node is given, triggering the event will be bound to it
+     *     instead of creating a new button.
      *
      * Returns the created button or null if no button was created.
      */
@@ -36,7 +50,9 @@ const Repl = (function(config) {
         const lcaseKey = key.key.toLowerCase();
         const ucaseKey = key.key.toUpperCase();
 
-        document.addEventListener("keydown", ev => {
+        const eventsRoot = config.keyboardShortcutRoot || document;
+
+        eventsRoot.addEventListener("keydown", ev => {
             if (ev.ctrlKey == !!key.ctrl && ev.altKey == !!key.alt && ev.shiftKey == !!key.shift) {
                 if (ev.key == key.key || ev.key == lcaseKey || ev.key == ucaseKey) {
                     if (ev.preventDefault) ev.preventDefault();
@@ -44,7 +60,10 @@ const Repl = (function(config) {
                 }
             }
         });
-        if (config.commandCheatSheet) {
+        if (key.triggerOnNode) {
+            key.triggerOnNode.addEventListener("click", key.action);
+            return key.triggerOnNode;
+        } else if (config.commandCheatSheet) {
             return config.commandCheatSheet.addShortcut(key.ctrl, key.alt, key.shift, key.key, key.hint, key.action);
         }
     }
@@ -56,6 +75,12 @@ const Repl = (function(config) {
     }
 
     function eval() {
+        if (executionInProgress) {
+            console.log("A previous execution is still in progress, aborting");
+            return;
+        } else {
+            executionInProgress = true;
+        }
         if (submitButton) submitButton.disabled = true;
 
         if (config.onCommandExecutionStarted) config.onCommandExecutionStarted();
@@ -76,7 +101,8 @@ const Repl = (function(config) {
                 return resp.text().then( result => config.resultsPane.serverError(result, resp.status));
             }
         })
-        .catch ( err => config.resultsPane.networkError(err));
+        .catch ( err => config.resultsPane.networkError(err))
+        .finally( () => executionInProgress = false);
     }
 
     /**

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../../bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="../../codemirror/codemirror.css" />
+    <link rel="stylesheet" type="text/css" href="../../codemirror/show-hint.css" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="icon" href="data:,">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script defer src="../../polyfills/promise.js"></script>
+    <script defer src="../../polyfills/fetch.js"></script>
+    <script defer src="../../codemirror/codemirror.js"></script>
+    <script defer src="../../codemirror/clike.js"></script>
+    <script defer src="../../codemirror/show-hint.js"></script>
+    <script defer src="../../databaseProviders.js"></script>
+    <script defer src="../../preResultsPane.js"></script>
+    <script defer src="../../repl.js"></script>
+    <script defer src="./app.js"></script>
+</head>
+<body class="container-fluid">
+
+    <h1>A sample tutorial</h1>
+
+    <h2>Lesson one</h2>
+    <p>
+        Welcome to this little. For our first lesson, we shall make our program output the word <em>goulash</em>.
+    </p>
+    <div class="interactive-frame">
+        <textarea>"paprika"</textarea>
+        <template class="hint">
+            Try making the REPL output the word "goulash". Run the example by pressing the green button.
+            Don't be afraid to try again if you fail. And also we want to see this text expand some more because
+            it could get like *really* long, capiche?
+        </template>
+    </div>
+
+    <h2>Lesson two</h2>
+    <p>
+        Goulash is not the only thing we can have.. why don't you try getting a <em>mousaka</em> now?
+    </p>
+    <div class="interactive-frame">
+        <textarea>"potatoes"</textarea>
+        <template class="hint">
+            This time it's obviously <strong>very</strong> different!
+        </template>
+    </div>
+</body>
+</html>

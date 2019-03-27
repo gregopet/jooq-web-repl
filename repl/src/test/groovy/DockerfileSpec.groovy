@@ -32,6 +32,7 @@ class DockerfileSpec extends Specification {
             .withFileFromPath("build.gradle", projectDir.resolve("build.gradle"))
             .withFileFromPath("settings.gradle", projectDir.resolve("settings.gradle"))
             .withFileFromPath("gradle.properties", projectDir.resolve("gradle.properties"))
+            .withFileFromPath("build_and_run_as_guest.sh", projectDir.resolve("build_and_run_as_guest.sh"))
         return image
     }
 

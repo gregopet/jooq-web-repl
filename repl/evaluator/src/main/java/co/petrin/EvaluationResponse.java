@@ -9,33 +9,35 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 public class EvaluationResponse {
 
     private String output;
+    private String errorOutput;
     private boolean isError;
     private Integer durationInMs;
 
-    private EvaluationResponse(String output, boolean isError, Integer durationInMs) {
+    private EvaluationResponse(String output, String errorOut, boolean isError, Integer durationInMs) {
         this.output = output;
+        this.errorOutput = errorOut;
         this.isError = isError;
         this.durationInMs = durationInMs;
     }
 
     public static EvaluationResponse setupError(String error) {
-        return new EvaluationResponse(error, true, null);
+        return new EvaluationResponse(error, null,true, null);
     }
 
     public static EvaluationResponse jshellError(Throwable t) {
-        return new EvaluationResponse("Script evaluator failed!\n" + ExceptionUtils.getMessage(t) + " " + ExceptionUtils.getStackTrace(t), true, null);
+        return new EvaluationResponse("Script evaluator failed!\n" + ExceptionUtils.getMessage(t) + " " + ExceptionUtils.getStackTrace(t), null, true, null);
     }
 
-    public static EvaluationResponse parseError(String error) { return new EvaluationResponse(error, true, null); }
+    public static EvaluationResponse parseError(String error) { return new EvaluationResponse(error, null, true, null); }
 
-    public static EvaluationResponse success(String output, long startedAtMillis) {
+    public static EvaluationResponse success(String output, String errorOutput, long startedAtMillis) {
         int durationInMs = (int)(System.currentTimeMillis() - startedAtMillis);
-        return new EvaluationResponse(output, false, durationInMs);
+        return new EvaluationResponse(output, errorOutput, false, durationInMs);
     }
 
     public static EvaluationResponse error(String output, long startedAtMillis) {
         int durationInMs = (int)(System.currentTimeMillis() - startedAtMillis);
-        return new EvaluationResponse(output, true, durationInMs);
+        return new EvaluationResponse(output, null, true, durationInMs);
     }
 
     // getters & setters.. sigh why exactly didn't I use Kotlin ?!?
@@ -49,6 +51,17 @@ public class EvaluationResponse {
 
     public void setOutput(String output) {
         this.output = output;
+    }
+
+    /**
+     * Things printed into the error output during evaluation.
+     */
+    public String getErrorOutput() {
+        return errorOutput;
+    }
+
+    public void setErrorOutput(String errorOutput) {
+        this.errorOutput = errorOutput;
     }
 
     /**

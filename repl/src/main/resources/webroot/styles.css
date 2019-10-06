@@ -56,6 +56,7 @@ html, body, .full-height {
 #results-pane {
     position: relative;
     overflow: auto;
+    padding: 0;
 }
 #results-pane .loader {
     position: absolute; top: 0; bottom: 0; left: 0; right: 0;
@@ -129,13 +130,48 @@ html, body, .full-height {
 /* Results pane styling */
 #results-pane {
     background-color: #f7f7f7;
-    scroll: auto;
-    padding: 0.5em;
     margin-bottom: 0;
 }
 #results-pane.completed-with-error {
     background-color: #f7e3e0;
 }
+#results-pane .result-representation {
+    padding-left: 0.3em;
+    overflow: auto;
+}
+
+/* Results pane alternate representation tabs */
+#result-tabs {
+    display: flex;
+    flex-direction: row;
+    padding-left: 0.3em;
+    margin-bottom: 0.5em;
+    background-color: #ddd;
+}
+
+#result-tabs>* {
+    margin-top: 0;
+    margin-right: 0.3em;
+    padding: 0.25em 0.5em 0.3em;
+    font-size: 0.8em;
+
+    border: 1px solid #dddddd;
+    border-top-width: 0;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+#result-tabs>*:hover {
+    color: red;
+}
+
+#result-tabs>.active {
+    background-color: black;
+    border-radius: 0.2rem;
+    color: white;
+}
+
+
 
 /** Snippet storage dialog */
 #storage-dialog .modal-body {

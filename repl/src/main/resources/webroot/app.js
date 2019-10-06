@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     // The editor itself
     const editor = Repl({
         textArea: document.querySelector('#script-content'),
-        resultsPane: PreResultsPane(document.querySelector("#results-pane pre")),
+        resultsPane: PreResultsPane(document.querySelector("#results-pane pre"), document.getElementById("result-tabs")),
         databaseProvider: DatabaseChooser(document.querySelector("#database-select")),
         commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list')),
         onCommandExecutionStarted: () => { resultsLoader.style.display = 'block' },

@@ -82,8 +82,12 @@ public class Evaluator {
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         var outputStorage = new ByteArrayOutputStream();
-        try (var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8)) {
-            activeShell = buildJShell(ps);
+        var errorStorage = new ByteArrayOutputStream();
+        try (
+            var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8);
+            var eps = new PrintStream(errorStorage, true, StandardCharsets.UTF_8)
+        ) {
+            activeShell = buildJShell(ps, eps);
 
             addImports(activeShell, db);
 
@@ -125,7 +129,7 @@ public class Evaluator {
                                 return error(printEvalException(event), startTime);
                             } else {
                                 if (isProcessingComplete(completionInfo)) {
-                                    return success(createOutput(activeShell, event, outputStorage), startTime);
+                                    return success(createOutput(activeShell, event, outputStorage), new String(errorStorage.toByteArray(), StandardCharsets.UTF_8), startTime);
                                 } else {
                                     humanNewlinesProcessed += newlinesInString(completionInfo.source());
                                     break;
@@ -140,7 +144,7 @@ public class Evaluator {
             }
 
             // If we didn't return anything by the time we got here, just return this..
-            return success(createOutput(activeShell, null, outputStorage), startTime);
+            return success(createOutput(activeShell, null, outputStorage), new String(errorStorage.toByteArray()), startTime);
         } finally {
           if (activeShell != null) {
               activeShell.close();
@@ -163,7 +167,7 @@ public class Evaluator {
         }
 
         try {
-            activeShell = buildJShell(null);
+            activeShell = buildJShell(null, null);
             addImports(activeShell, db);
             if (db != null) {
                 runSingleSnippet(activeShell, String.format(
@@ -196,7 +200,7 @@ public class Evaluator {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
         try {
-            activeShell = buildJShell(null);
+            activeShell = buildJShell(null, null);
             addImports(activeShell, db);
             if (db != null) {
                 runSingleSnippet(activeShell, String.format(
@@ -333,12 +337,15 @@ public class Evaluator {
         return events.get(0);
     }
 
-    private JShell buildJShell(PrintStream outputStream) {
+    private JShell buildJShell(PrintStream outputStream, PrintStream errorStream) {
         var builder = JShell.builder()
         .executionEngine(mode);
 
         if (outputStream != null) {
-            builder.out(outputStream).err(outputStream);
+            builder.out(outputStream);
+        }
+        if (errorStream != null) {
+            builder.err(errorStream);
         }
 
         var shell = builder.build();

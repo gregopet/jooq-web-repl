@@ -97,7 +97,15 @@ const Repl = (function(config) {
             if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
-                return resp.json().then( result => config.resultsPane.normally(result));
+                return resp.json().then( result => {
+                    config.resultsPane.normally(result);
+                    if (result.errorOutput) {
+                        // TODO: refactor the error creation into a class?
+                        const log = document.createElement("pre");
+                        log.innerHTML = result.errorOutput;
+                        config.resultsPane.normalAlternateResponse("Log", log);
+                    }
+                })
             } else {
                 return resp.text().then( result => config.resultsPane.serverError(result, resp.status));
             }

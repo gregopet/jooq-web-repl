@@ -1,27 +1,3 @@
-/** Makes the splitter draggable and double-clickable */
-function createSplitter() {
-    const resultsPane = document.getElementById('results-pane');
-    const splitter = document.querySelector("#splitter");
-
-    var isMouseDown = false;
-    splitter.addEventListener("mousedown", () => isMouseDown = true);
-    document.addEventListener("mouseup", () => isMouseDown = false);
-    document.addEventListener("mousemove", (ev) => {
-        if (ev && isMouseDown && ev.offsetY) {
-            var dist = ev.clientY - resultsPane.offsetTop;
-            resultsPane.style['flex-basis'] = "" + (resultsPane.offsetHeight - dist) + "px";
-            resultsPane.style['flex-grow'] = "0";
-            if (ev.preventDefault) ev.preventDefault();
-        }
-    });
-
-    // go back to "neutral" size when double clicking on the splitter
-    document.addEventListener("dblclick", (ev) => {
-        resultsPane.style['flex-basis'] = "";
-        resultsPane.style['flex-grow'] = "0";
-    });
-}
-
 document.addEventListener("DOMContentLoaded", function(event) {
 
     // A closeable command area
@@ -55,6 +31,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     Storage(editor);
 
     // The splitter between script & command panes
-    createSplitter();
-
+    let split = Split(['#query-pane', '#results-pane'], {
+        minSize: 50,
+        direction: 'vertical',
+        gutterSize: 6
+    });
 });

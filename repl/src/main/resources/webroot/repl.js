@@ -82,6 +82,7 @@ const Repl = (function(config) {
             executionInProgress = true;
         }
         if (submitButton) submitButton.disabled = true;
+        config.resultsPane.clear();
 
         if (config.onCommandExecutionStarted) config.onCommandExecutionStarted();
         fetch(appendSelectedDatabasePrefix("/eval"), {

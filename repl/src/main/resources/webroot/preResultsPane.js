@@ -6,6 +6,13 @@
 const PreResultsPane = function(preElement) {
 
     /**
+     * Clears out the current contents of the result pane.
+     */
+    function clear() {
+        preElement.innerText = '';
+    }
+
+    /**
      * Execution was performed on the server (successfully or not)
      * @param a deserialized EvaluationResponse sent by the server
      */
@@ -35,6 +42,7 @@ const PreResultsPane = function(preElement) {
 
 
     return {
+        clear: clear,
         normally: normally,
         serverError : serverError,
         networkError : networkError

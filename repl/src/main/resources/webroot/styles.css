@@ -143,6 +143,7 @@ html, body, .full-height {
 /* Results pane alternate representation tabs */
 #result-tabs {
     display: flex;
+    display: flex;
     flex-direction: row;
     padding-left: 0.3em;
     margin-bottom: 0.5em;
@@ -185,9 +186,14 @@ html, body, .full-height {
 }
 #snippet-listing {
     flex-basis: 200px;
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
 }
 #snippet-listing-names {
     width: 200px;
+    overflow: auto;
 }
 
 #snippet-preview {

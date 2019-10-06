@@ -95,6 +95,13 @@ html, body, .full-height {
 #query-pane .command-area .card-body ul kbd {
     width: 8em;
     text-align: left;
+    box-sizing: border-box;
+    border: 1px solid #212529;
+    white-space: nowrap;
+}
+
+#query-pane .command-area .card-body button:hover kbd {
+    border: 1px solid white;
 }
 
 #query-pane .command-area .card-body kbd {

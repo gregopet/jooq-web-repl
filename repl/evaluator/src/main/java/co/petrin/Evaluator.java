@@ -207,12 +207,7 @@ public class Evaluator {
             var activeShell = jShell;
             addImports(activeShell, db);
             if (db != null) {
-                runSingleSnippet(activeShell, String.format(
-                    "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
-                    javaString(db.connectionString),
-                    javaString(db.user),
-                    javaString(db.password)
-                ));
+                runSingleSnippet(activeShell, "var jooq = DSL.using(org.jooq.SQLDialect.H2);"); //Exact dialect does not matter for suggestions!
             }
             int[] anchor = new int[1];
             var amendedRequest = trimEvaluationRequest(activeShell, request);
@@ -242,12 +237,7 @@ public class Evaluator {
             var activeShell = jShell;
             addImports(activeShell, db);
             if (db != null) {
-                runSingleSnippet(activeShell, String.format(
-                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
-                        javaString(db.connectionString),
-                        javaString(db.user),
-                        javaString(db.password)
-                ));
+                runSingleSnippet(activeShell, "var jooq = DSL.using(org.jooq.SQLDialect.H2);"); //Exact dialect does not matter for javadocs!
             }
             var amendedRequest = trimEvaluationRequest(activeShell, request);
             var javadocs = activeShell.sourceCodeAnalysis().documentation(amendedRequest.getScript(), amendedRequest.getCursorPosition(), true);

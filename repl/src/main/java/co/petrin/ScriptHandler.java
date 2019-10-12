@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -104,7 +106,7 @@ public class ScriptHandler {
                         .filter(dbConfig -> dbConfig.id == dbId).findAny()
                         .orElseThrow(() -> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
                 var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-                var evaluator = createEvaluator();
+                var evaluator = getEvaluator();
                 rc.response().closeHandler(h -> evaluator.stop() );
                 var response = handler.apply(evaluator, db, request);
                 int returnStatus = 200;
@@ -115,6 +117,7 @@ public class ScriptHandler {
             } catch (Throwable t) {
                 rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }
+            prepareEvaluator();
         });
     }
 
@@ -129,14 +132,19 @@ public class ScriptHandler {
         router.postWithRegex("/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
             try {
                 var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-                var evaluator = createEvaluator();
+                var evaluator = getEvaluator();
                 rc.response().closeHandler(h -> evaluator.stop());
                 var response = handler.apply(evaluator, request);
                 rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
             } catch (Throwable t) {
                 rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }
+            prepareEvaluator();
         });
+    }
+
+    private Evaluator getEvaluator() {
+        return Objects.requireNonNullElseGet(evaluators.poll(), this::createEvaluator);
     }
 
     /**
@@ -144,9 +152,18 @@ public class ScriptHandler {
      * @return A constructed evaluator.
      */
     private Evaluator createEvaluator() {
+        System.out.println("Creating an evaluator");
         var evalCp = StringUtils.defaultIfEmpty(System.getenv(EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE), "");
         var cpList = Arrays.stream(evalCp.split("\\s")).filter(StringUtils::isNotBlank).collect(toList());
         return Evaluator.spawn(cpList);
+    }
+
+    private ConcurrentLinkedQueue<Evaluator> evaluators = new ConcurrentLinkedQueue<>();
+    private void prepareEvaluator() {
+        // TODO: do this in a thread pool or something?
+        Evaluator evaluator = createEvaluator();
+        evaluator.init();
+        evaluators.add(evaluator);
     }
 
 }

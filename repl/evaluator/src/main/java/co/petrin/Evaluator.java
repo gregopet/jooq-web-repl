@@ -39,9 +39,29 @@ public class Evaluator {
     private final List<String> extraClasspath;
 
     /**
-     * The currently active shell. Usage of this variable makes the class non thread safe.
+     * A buffer that will contain the standard output of any evaluation.
      */
-    private JShell activeShell;
+    ByteArrayOutputStream outputStorage;
+
+    /**
+     * The print stream for JShell's standard output.
+     */
+    PrintStream outputPrintStream;
+
+    /**
+     * A buffer that will contain the standard error output of any evaluation.
+     */
+    ByteArrayOutputStream errorStorage;
+
+    /**
+     * The print stream for JShell's standard error output.
+     */
+    PrintStream errorPrintStream;
+
+    /**
+     * The shell to use for computations.
+     */
+    JShell jShell;
 
     /**
      * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
@@ -74,6 +94,22 @@ public class Evaluator {
         this.extraClasspath = extraClasspath;
     }
 
+    public void init() {
+        outputStorage = new ByteArrayOutputStream();
+        outputPrintStream = new PrintStream(outputStorage, true, StandardCharsets.UTF_8);
+        errorStorage = new ByteArrayOutputStream();
+        errorPrintStream = new PrintStream(errorStorage, true, StandardCharsets.UTF_8);
+        jShell = buildJShell(outputPrintStream, errorPrintStream);
+    }
+
+    private void cleanup() {
+        outputPrintStream = null;
+        outputStorage = null;
+        errorPrintStream = null;
+        errorStorage = null;
+        jShell = null;
+    }
+
     /**
      * Builds a new evaluator and evaluates the script.
      * @param db The database to run the script against
@@ -81,14 +117,14 @@ public class Evaluator {
      * @return The evaluation result
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
-        var outputStorage = new ByteArrayOutputStream();
-        var errorStorage = new ByteArrayOutputStream();
+        if (jShell == null) {
+            init();
+        }
         try (
-            var ps = new PrintStream(outputStorage, true, StandardCharsets.UTF_8);
-            var eps = new PrintStream(errorStorage, true, StandardCharsets.UTF_8)
+            var ps = outputPrintStream;
+            var eps = errorPrintStream;
+            var activeShell = jShell;
         ) {
-            activeShell = buildJShell(ps, eps);
-
             addImports(activeShell, db);
 
             // jooq connection
@@ -146,10 +182,7 @@ public class Evaluator {
             // If we didn't return anything by the time we got here, just return this..
             return success(createOutput(activeShell, null, outputStorage), new String(errorStorage.toByteArray()), startTime);
         } finally {
-          if (activeShell != null) {
-              activeShell.close();
-              activeShell = null;
-          }
+            cleanup();
         }
     }
 
@@ -166,8 +199,12 @@ public class Evaluator {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
+        if (jShell == null) {
+            init();
+        }
+
         try {
-            activeShell = buildJShell(null, null);
+            var activeShell = jShell;
             addImports(activeShell, db);
             if (db != null) {
                 runSingleSnippet(activeShell, String.format(
@@ -183,10 +220,7 @@ public class Evaluator {
             var suggestions = activeShell.sourceCodeAnalysis().completionSuggestions(amendedRequest.getScript(), amendedRequest.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0] + anchorOffset, suggestions);
         } finally {
-            if (activeShell != null) {
-                activeShell.close();
-                activeShell = null;
-            }
+            cleanup();
         }
     }
 
@@ -199,8 +233,13 @@ public class Evaluator {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
+
+        if (jShell == null) {
+            init();
+        }
+
         try {
-            activeShell = buildJShell(null, null);
+            var activeShell = jShell;
             addImports(activeShell, db);
             if (db != null) {
                 runSingleSnippet(activeShell, String.format(
@@ -222,10 +261,7 @@ public class Evaluator {
 
             return javadocs.stream().map(DocumentationResponse::new).collect(toList());
         } finally {
-            if (activeShell != null) {
-                activeShell.close();
-                activeShell = null;
-            }
+            cleanup();
         }
     }
 
@@ -234,7 +270,7 @@ public class Evaluator {
      * and the underlying evaluator.
      */
     public void stop() {
-        JShell js = activeShell;
+        JShell js = jShell;
         if (js != null) {
             js.stop();
         }

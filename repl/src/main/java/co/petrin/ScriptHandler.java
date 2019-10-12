@@ -152,7 +152,6 @@ public class ScriptHandler {
      * @return A constructed evaluator.
      */
     private Evaluator createEvaluator() {
-        System.out.println("Creating an evaluator");
         var evalCp = StringUtils.defaultIfEmpty(System.getenv(EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE), "");
         var cpList = Arrays.stream(evalCp.split("\\s")).filter(StringUtils::isNotBlank).collect(toList());
         return Evaluator.spawn(cpList);

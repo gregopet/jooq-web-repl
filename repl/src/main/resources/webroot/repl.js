@@ -120,6 +120,7 @@ const Repl = (function(config) {
      * Invoke suggestion mechanism. Returns the data CodeMirror needs to display suggestions.
      */
     function suggest() {
+        // TODO possible optimization: narrow list locally if new input is more precise version of last one
         backgroundRequestStarted();
         return fetch(appendSelectedDatabasePrefix("/suggest"), {
             method: 'POST',
@@ -132,13 +133,12 @@ const Repl = (function(config) {
             backgroundRequestFinished();
             return resp.json();
         })
-        .then(mapSuggestions )
+        .then(mapSuggestions)
         .catch ( err => { config.resultsPane.networkError("Network error submitting query to server!\n" + err)});
     }
 
     /** Maps the returned suggestions to a format our editor can understand */
     function mapSuggestions(result) {
-
         // Remove duplicates and display non-matching suggestions last (suggestions come pre-sorted alphabetically)
         let lastAdded = undefined;
         let matchType = [];
@@ -178,7 +178,7 @@ const Repl = (function(config) {
             mode: { name: "clike" },
             extraKeys: {"Ctrl-Space": "autocomplete"},
             hintOptions: {
-                hint: suggest,
+                hint: debounce(suggest, 500, { leading: true }),
                 completeSingle: false
             }
         });

@@ -83,6 +83,7 @@ const Repl = (function(config) {
         }
         if (submitButton) submitButton.disabled = true;
         config.resultsPane.clear();
+        backgroundRequestStarted();
 
         if (config.onCommandExecutionStarted) config.onCommandExecutionStarted();
         fetch(appendSelectedDatabasePrefix("/eval"), {
@@ -93,6 +94,7 @@ const Repl = (function(config) {
             }
         })
         .then( resp => {
+            backgroundRequestFinished();
             if (config.onCommandExecutionFinished) config.onCommandExecutionFinished(resp);
             if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
@@ -118,6 +120,7 @@ const Repl = (function(config) {
      * Invoke suggestion mechanism. Returns the data CodeMirror needs to display suggestions.
      */
     function suggest() {
+        backgroundRequestStarted();
         return fetch(appendSelectedDatabasePrefix("/suggest"), {
             method: 'POST',
             body: JSON.stringify(getSnippet()),
@@ -125,7 +128,10 @@ const Repl = (function(config) {
                 "X-CSRF-TOKEN" : getCSRFFromCookie()
             }
         })
-        .then( resp => resp.json() )
+        .then( resp => {
+            backgroundRequestFinished();
+            return resp.json();
+        })
         .then(mapSuggestions )
         .catch ( err => { resultsArea.innerText = "Network error submitting query to server!\n" + err});
     }
@@ -192,6 +198,23 @@ const Repl = (function(config) {
         if (match) return match[2]; else return "";
     }
 
+    // Track how many requests are going on in the background to provide some kind of waiting indicator
+    let backgroundRequestsInFlight = 0;
+
+    function backgroundRequestStarted() {
+        if (backgroundRequestsInFlight == 0) {
+            document.body.classList.add("requests-in-flight");
+        }
+        backgroundRequestsInFlight++;
+    }
+
+    function backgroundRequestFinished() {
+        backgroundRequestsInFlight--;
+        if (backgroundRequestsInFlight == 0) {
+            document.body.classList.remove("requests-in-flight");
+        }
+    }
+
     return {
         /** The CodeMirror editor instance */
         getEditor: () => editor,
@@ -205,6 +228,9 @@ const Repl = (function(config) {
         /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
         getCSRFFromCookie: getCSRFFromCookie,
 
+
+        backgroundRequestStarted: backgroundRequestStarted,
+        backgroundRequestFinished: backgroundRequestFinished,
         registerShortcut: registerShortcut
     }
 });

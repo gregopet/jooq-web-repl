@@ -256,3 +256,8 @@ html, body, .full-height {
      color: #004085;
      background-color: #b8daff;
 }
+
+/** Requests in flight */
+.requests-in-flight {
+    cursor: wait;
+}

@@ -38,6 +38,7 @@ const Javadoc = (function(editor) {
 
     /** Fetches javadocs for the current code position and displays them, storing unopened ones on the DOM element */
     function javadoc() {
+        editor.backgroundRequestStarted();
         return fetch(editor.appendSelectedDatabasePrefix("/javadoc"), {
             method: 'POST',
             body: JSON.stringify(editor.getSnippet()),
@@ -45,7 +46,10 @@ const Javadoc = (function(editor) {
                 "X-CSRF-TOKEN" : editor.getCSRFFromCookie()
             }
         })
-        .then( resp => resp.json() )
+        .then( resp => {
+            editor.backgroundRequestFinished();
+            return resp.json()
+        })
         .then(docs => {
             latestJavadocs = docs.map( (javadoc, idx) => {
                 const positionString = docs.length == 0 ? "" : " " + (idx + 1) + "/" + docs.length

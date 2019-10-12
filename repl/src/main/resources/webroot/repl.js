@@ -133,7 +133,7 @@ const Repl = (function(config) {
             return resp.json();
         })
         .then(mapSuggestions )
-        .catch ( err => { resultsArea.innerText = "Network error submitting query to server!\n" + err});
+        .catch ( err => { config.resultsPane.networkError("Network error submitting query to server!\n" + err)});
     }
 
     /** Maps the returned suggestions to a format our editor can understand */

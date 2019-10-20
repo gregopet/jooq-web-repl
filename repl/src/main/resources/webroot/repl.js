@@ -173,12 +173,12 @@ const Repl = (function(config) {
     }
 
     function initCodemirror() {
-        let cmEditor = CodeMirror.fromTextArea(config.textArea, {
+        let cmEditor = LIBS.CodeMirror.fromTextArea(config.textArea, {
             lineNumbers: true,
             mode: { name: "clike" },
             extraKeys: {"Ctrl-Space": "autocomplete"},
             hintOptions: {
-                hint: debounce(suggest, 500, { leading: true }),
+                hint: LIBS.debounce(suggest, 500, { leading: true }),
                 completeSingle: false
             }
         });

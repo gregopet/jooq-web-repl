@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     Storage(editor);
 
     // The splitter between script & command panes
-    let split = Split(['#query-pane', '#results-pane'], {
+    let split = LIBS.Split.default(['#query-pane', '#results-pane'], {
         minSize: 50,
         direction: 'vertical',
         gutterSize: 6

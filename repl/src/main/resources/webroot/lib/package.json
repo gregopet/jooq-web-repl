@@ -1,0 +1,38 @@
+{
+  "private": true,
+  "name": "jooq-web-repl",
+  "version": "1.0.0",
+  "description": "A web REPL for executing Java code, focused on executing interactive jOOQ queries.",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gregopet/jooq-web-repl.git"
+  },
+  "keywords": [
+    "jooq",
+    "repl",
+    "db",
+    "java"
+  ],
+  "author": "Gregor Petrin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gregopet/jooq-web-repl/issues"
+  },
+  "homepage": "https://github.com/gregopet/jooq-web-repl#readme",
+  "dependencies": {
+    "bootstrap": "^4.3.1",
+    "codemirror": "^5.49.0",
+    "debounce-promise": "^3.1.2",
+    "split.js": "^1.5.11",
+    "webpack": "^4.41.2"
+  },
+  "devDependencies": {
+    "webpack-cli": "^3.3.9"
+  }
+}

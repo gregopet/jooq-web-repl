@@ -27,6 +27,7 @@
   "homepage": "https://github.com/gregopet/jooq-web-repl#readme",
   "dependencies": {
     "bootstrap": "^4.3.1",
+    "can-ndjson-stream": "^1.0.2",
     "codemirror": "^5.49.0",
     "debounce-promise": "^3.1.2",
     "split.js": "^1.5.11",

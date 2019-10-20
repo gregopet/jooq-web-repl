@@ -2,6 +2,7 @@ package co.petrin;
 
 import co.petrin.function.TriFunction;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -30,6 +31,9 @@ public class ScriptHandler {
 
     /** Maximum length of scripts incoming in request bodies in bytes */
     private static long BODY_SIZE_LIMIT = 100_000; // is this enough?
+
+    /** Separator between JSON records */
+    private static final Buffer NEWLINE_BUFFER = Buffer.buffer("\n");
 
     /** All the configured databases, read on instantiation form environment variables */
     private final List<Database> databases;
@@ -113,7 +117,12 @@ public class ScriptHandler {
                 if (response instanceof EvaluationResponse && ((EvaluationResponse) response).isError()) {
                     returnStatus = 400;
                 }
-                rc.response().setStatusCode(returnStatus).putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+                rc.response()
+                    .setChunked(true)
+                    .setStatusCode(returnStatus)
+                    .putHeader("content-type", "application/json; charset=UTF-8")
+                    .write(Json.encode(response))
+                    .end(NEWLINE_BUFFER);
             } catch (Throwable t) {
                 rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }
@@ -135,7 +144,11 @@ public class ScriptHandler {
                 var evaluator = getEvaluator();
                 rc.response().closeHandler(h -> evaluator.stop());
                 var response = handler.apply(evaluator, request);
-                rc.response().putHeader("content-type", "application/json; charset=UTF-8").end(Json.encodePrettily(response));
+                rc.response()
+                    .setChunked(true) // this way we don't have to set specific content length
+                    .putHeader("content-type", "application/json; charset=UTF-8")
+                    .write(Json.encode(response))
+                    .end(NEWLINE_BUFFER);
             } catch (Throwable t) {
                 rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
             }

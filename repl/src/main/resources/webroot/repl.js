@@ -99,7 +99,9 @@ const Repl = (function(config) {
             if (submitButton) submitButton.disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
-                return resp.json().then( result => {
+                let firstResultRead = false;
+
+                const processMainResult = (result) => {
                     config.resultsPane.normally(result);
                     if (result.errorOutput) {
                         // TODO: refactor the error creation into a class?
@@ -107,7 +109,22 @@ const Repl = (function(config) {
                         log.innerHTML = result.errorOutput;
                         config.resultsPane.normalAlternateResponse("Log", log);
                     }
-                })
+                };
+
+                const readFromReader = (reader) => {
+                    reader.read().then( (readResult) => {
+                        if (!readResult.done) {
+                            if (!firstResultRead) {
+                                firstResultRead = true;
+                                processMainResult(readResult.value);
+                            } else {
+                                console.log("Additional data received", readResult.value); 
+                            }
+                            readFromReader(reader);
+                        }
+                    });
+                }
+                readFromReader(LIBS.ndjsonStream(resp.body).getReader());
             } else {
                 return resp.text().then( result => config.resultsPane.serverError(result, resp.status));
             }

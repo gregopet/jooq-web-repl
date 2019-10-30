@@ -16,8 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -29,8 +27,15 @@ public class ScriptHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ScriptHandler.class);
     private static final Logger SCRIPT_LOG = LoggerFactory.getLogger("script.eval");
 
+    private static final String DATABASE_CTX_KEY = "database";
+    private static final String REQUEST_CTX_KEY = "request";
+    private static final String EVALUATION_RESULT_KEY = "evalresult";
+
+    /** Paths can either have a database ID prefixed or not */
+    private static final String DB_ENDPOINTS_PREFIX = "(?:/[0-9]+)?";
+
     /** Maximum length of scripts incoming in request bodies in bytes */
-    private static long BODY_SIZE_LIMIT = 100_000; // is this enough?
+    private static final long BODY_SIZE_LIMIT = 100_000; // is this enough?
 
     /** Separator between JSON records */
     private static final Buffer NEWLINE_BUFFER = Buffer.buffer("\n");
@@ -62,24 +67,58 @@ public class ScriptHandler {
      * @param vertx The vertx instance to create the router on.
      */
     public Router getRouter(Vertx vertx) {
+
         var router = Router.router(vertx);
-        router.get().handler(this::listDatabases);
-        registerNoDatabasePostHandler(router, "eval", (evaluator, req) -> {
+
+        // simple list request
+        router.get("/").handler(this::listDatabases);
+
+        // evaluation requests
+        router.routeWithRegex("/([0-9]+).*").handler(this::populateDatabaseId);
+        router.post().handler(BodyHandler.create(false).setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler(this::extractEvaluationRequest);
+
+        router.postWithRegex(DB_ENDPOINTS_PREFIX + "/eval").blockingHandler(ctx -> {
+            Database db = ctx.get(DATABASE_CTX_KEY);
+            EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
             if (SCRIPT_LOG.isInfoEnabled()) {
-                SCRIPT_LOG.info("Evaluating script (without a database): " + req.getScript());
+                var dbDescriptor = db != null ? db.toString() : "without a database";
+                SCRIPT_LOG.info("Evaluating script (" + dbDescriptor + "): " + req.getScript());
             }
-            return evaluator.evaluate(null, req);
-        });
-        registerNoDatabasePostHandler(router, "suggest", (evaluator, req) -> evaluator.suggest(null, req));
-        registerNoDatabasePostHandler(router, "javadoc", (evaluator, req) -> evaluator.javadoc(null, req));
-        registerDatabasePostHandler(router, "eval", (evaluator, db, req) -> {
-            if (SCRIPT_LOG.isInfoEnabled()) {
-                SCRIPT_LOG.info("Evaluating script (on database " + db + "): " + req.getScript());
+
+            var response = getEvaluator().evaluate(db, req);
+            ctx.put(EVALUATION_RESULT_KEY, response);
+            ctx.next();
+
+            prepareEvaluator();
+        }).handler(ctx -> {
+            EvaluationResponse response = ctx.get(EVALUATION_RESULT_KEY);
+            int returnStatus = 200;
+            if (response != null && response.isError()) {
+                returnStatus = 400;
             }
-            return evaluator.evaluate(db, req);
+
+            ctx.response()
+                .setChunked(true)
+                .setStatusCode(returnStatus)
+                .putHeader("content-type", "application/json; charset=UTF-8")
+                .write(Json.encode(response))
+                .end(NEWLINE_BUFFER);
         });
-        registerDatabasePostHandler(router, "suggest", (evaluator, db, req) -> evaluator.suggest(db, req));
-        registerDatabasePostHandler(router, "javadoc", (evaluator, db, req) -> evaluator.javadoc(db, req));
+
+        router.postWithRegex(DB_ENDPOINTS_PREFIX + "/suggest").blockingHandler(ctx -> {
+            Database db = ctx.get(DATABASE_CTX_KEY);
+            EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator().suggest(db, req));
+            ctx.next();
+        }).handler(ctx -> ctx.response().end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))));
+
+        router.postWithRegex(DB_ENDPOINTS_PREFIX + "/javadoc").blockingHandler(ctx -> {
+            Database db = ctx.get(DATABASE_CTX_KEY);
+            EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator().javadoc(db, req));
+            ctx.next();
+        }).handler(ctx -> ctx.response().end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))));
+
         return router;
     }
 
@@ -92,68 +131,6 @@ public class ScriptHandler {
             databaseList.stream()
                 .collect(Collectors.toMap(db -> Integer.toString(db.id), db -> db.description))
         ).toString();
-    }
-
-    /**
-     * Registers a router path to which we can POST an EvaluationRequest payload that is supposed to run on a database
-     * and respond with any JSON payload.
-     * The registered routes will be of the form /{databaseId}/{operation}
-     *
-     * @param router The router instance on which to register the handlers
-     * @param operation The operation-specific path segment that follows the database number.
-     */
-    private void registerDatabasePostHandler(Router router, String operation, TriFunction<Evaluator, Database, EvaluationRequest, Object> handler) {
-        router.postWithRegex("/([0-9]{1,3})/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
-            try {
-                var dbId = Integer.parseInt(rc.request().getParam("param0"));
-                var db = databases.stream()
-                        .filter(dbConfig -> dbConfig.id == dbId).findAny()
-                        .orElseThrow(() -> new IllegalArgumentException("Database with id " + dbId + " could not be found!"));
-                var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-                var evaluator = getEvaluator();
-                rc.response().closeHandler(h -> evaluator.stop() );
-                var response = handler.apply(evaluator, db, request);
-                int returnStatus = 200;
-                if (response instanceof EvaluationResponse && ((EvaluationResponse) response).isError()) {
-                    returnStatus = 400;
-                }
-                rc.response()
-                    .setChunked(true)
-                    .setStatusCode(returnStatus)
-                    .putHeader("content-type", "application/json; charset=UTF-8")
-                    .write(Json.encode(response))
-                    .end(NEWLINE_BUFFER);
-            } catch (Throwable t) {
-                rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
-            }
-            prepareEvaluator();
-        });
-    }
-
-    /**
-     * Registers a router path to which we can POST an EvaluationRequest payload and respond with any JSON payload.
-     * The registered routes will be of the form /{operation}
-     *
-     * @param router The router instance on which to register the handlers
-     * @param operation The path on which this handler should be registered
-     */
-    private void registerNoDatabasePostHandler(Router router, String operation, BiFunction<Evaluator, EvaluationRequest, Object> handler) {
-        router.postWithRegex("/" + operation).handler(BodyHandler.create().setBodyLimit(BODY_SIZE_LIMIT)).blockingHandler( rc -> {
-            try {
-                var request = Json.decodeValue(rc.getBody(), EvaluationRequest.class);
-                var evaluator = getEvaluator();
-                rc.response().closeHandler(h -> evaluator.stop());
-                var response = handler.apply(evaluator, request);
-                rc.response()
-                    .setChunked(true) // this way we don't have to set specific content length
-                    .putHeader("content-type", "application/json; charset=UTF-8")
-                    .write(Json.encode(response))
-                    .end(NEWLINE_BUFFER);
-            } catch (Throwable t) {
-                rc.response().setStatusCode(500).end("Evaluation caused an unexpected error of type " + t.getClass().getName());
-            }
-            prepareEvaluator();
-        });
     }
 
     private Evaluator getEvaluator() {
@@ -178,4 +155,36 @@ public class ScriptHandler {
         evaluators.add(evaluator);
     }
 
+    private Database getDatabase(int dbId) {
+        return databases
+            .stream()
+            .filter(dbConfig -> dbConfig.id == dbId)
+            .findAny()
+            .orElse(null);
+    }
+
+    /**
+     * Extract the database if it was provided as the first path segment in the request. Put the database
+     * configuration into the DATABASE_CTX_KEY request parameter.
+     */
+    private void populateDatabaseId(RoutingContext ctx) {
+        final var dbId = Integer.parseInt(ctx.request().getParam("param0"));
+        var db = getDatabase(dbId);
+        if (db == null) {
+            ctx.response().setStatusCode(400).end("Database " + dbId + " not found!");
+        } else {
+            ctx.put(DATABASE_CTX_KEY, db);
+            ctx.next();
+        }
+    }
+
+    /**
+     * Extract the evaluation request POST-ed into the eval handlers. Put the request into the
+     * REQUEST_CTX_KEY request parameter.
+     */
+    private void extractEvaluationRequest(RoutingContext ctx) {
+        var request = Json.decodeValue(ctx.getBody(), EvaluationRequest.class);
+        ctx.put(REQUEST_CTX_KEY, request);
+        ctx.next();
+    }
 }

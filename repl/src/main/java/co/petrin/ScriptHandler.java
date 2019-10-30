@@ -85,7 +85,7 @@ public class ScriptHandler {
                 SCRIPT_LOG.info("Evaluating script (" + dbDescriptor + "): " + req.getScript());
             }
 
-            var response = getEvaluator().evaluate(db, req);
+            var response = getEvaluator(ctx).evaluate(db, req);
             ctx.put(EVALUATION_RESULT_KEY, response);
             ctx.next();
 
@@ -108,16 +108,25 @@ public class ScriptHandler {
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/suggest").blockingHandler(ctx -> {
             Database db = ctx.get(DATABASE_CTX_KEY);
             EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
-            ctx.put(EVALUATION_RESULT_KEY, getEvaluator().suggest(db, req));
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).suggest(db, req));
             ctx.next();
-        }).handler(ctx -> ctx.response().end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))));
+        }).handler(ctx -> ctx
+            .response()
+            .putHeader("content-type", "application/json; charset=UTF-8")
+            .end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))))
+        ;
 
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/javadoc").blockingHandler(ctx -> {
             Database db = ctx.get(DATABASE_CTX_KEY);
             EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
-            ctx.put(EVALUATION_RESULT_KEY, getEvaluator().javadoc(db, req));
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).javadoc(db, req));
             ctx.next();
-        }).handler(ctx -> ctx.response().end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))));
+        }).handler(ctx -> ctx
+            .response()
+            .putHeader("content-type", "application/json; charset=UTF-8")
+            .end(Json.encode(ctx.get(EVALUATION_RESULT_KEY)))
+        );
+
 
         return router;
     }
@@ -133,8 +142,14 @@ public class ScriptHandler {
         ).toString();
     }
 
-    private Evaluator getEvaluator() {
-        return Objects.requireNonNullElseGet(evaluators.poll(), this::createEvaluator);
+    /**
+     * Gets an evaluator, binding it to the current request: if it ends prematurely, the evaluator will attempt to be
+     * stopped.
+     */
+    private Evaluator getEvaluator(RoutingContext ctx) {
+        var evaluator = Objects.requireNonNullElseGet(evaluators.poll(), this::createEvaluator);
+        ctx.response().closeHandler(ch -> evaluator.stop());
+        return evaluator;
     }
 
     /**

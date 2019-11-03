@@ -274,26 +274,15 @@ public class Evaluator {
      * @return The compiled output
      */
     private String createOutput(JShell js, SnippetEvent finalEvent, ByteArrayOutputStream executionOutput) {
-        var output = StringUtils.defaultIfBlank(executionOutput.toString(StandardCharsets.UTF_8), "");
-        var eventValue = StringUtils.defaultIfBlank(finalEvent == null ? null : finalEvent.value(), "");
-
-        // unquote plain strings - we are much more interested in plain results than in knowing the last variable
-        // was _exactly_ a String (esp. since this doesn't even trigger for any other CharSequence).
-        if (eventValue.startsWith("\"") && eventValue.endsWith("\"") && eventValue.length() > 1 && finalEvent.snippet() != null) {
-            String lastType = null;
-            if (finalEvent.snippet().kind() == Snippet.Kind.VAR) {
-                lastType = ((VarSnippet)finalEvent.snippet()).typeName();
-            }
-            if (finalEvent.snippet().kind() == Snippet.Kind.EXPRESSION) {
-                lastType = ((ExpressionSnippet)finalEvent.snippet()).typeName();
-            }
-
-            if ("String".equals(lastType)) {
-                eventValue = StringEscapeUtils.unescapeJava(eventValue.substring(1, eventValue.length() - 1));
-            }
+        if (finalEvent.snippet().kind() == Snippet.Kind.VAR) {
+            // if last thing was a variable declaration, print that variable out!
+            runSingleSnippet(js, "System.out.println(" + ((VarSnippet)finalEvent.snippet()).name() + ");");
         }
-
-        return StringUtils.defaultIfBlank(output + eventValue, NO_OUTPUT_TEXT);
+        else if (finalEvent.snippet().kind() == Snippet.Kind.EXPRESSION) {
+            // if last thing was an expression, print that expression's value into the stream
+            executionOutput.writeBytes(finalEvent.value().getBytes(StandardCharsets.UTF_8));
+        }
+        return StringUtils.defaultIfBlank(executionOutput.toString(StandardCharsets.UTF_8), "");
     }
 
 

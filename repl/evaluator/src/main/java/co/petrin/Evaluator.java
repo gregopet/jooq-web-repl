@@ -1,5 +1,7 @@
 package co.petrin;
 
+import co.petrin.augmentation.JooqGrid;
+import co.petrin.response.*;
 import jdk.jshell.*;
 
 import java.io.ByteArrayOutputStream;
@@ -8,13 +10,15 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import static co.petrin.EvaluationResponse.*;
+
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -23,7 +27,7 @@ import static java.util.stream.Collectors.toList;
  *
  * Evaluator instances are not thread safe.
  */
-public class Evaluator {
+public class Evaluator implements AutoCloseable {
 
     private static final String NO_OUTPUT_TEXT = "The execution finished without results.";
 
@@ -37,6 +41,13 @@ public class Evaluator {
      * The extra classpath entries to provide remote evaluation engines with.
      */
     private final List<String> extraClasspath;
+
+    /**
+     * The augmentation classes that can provide more detailed output from the evaluation.
+     */
+    private final List<AugmentedOutput> augmentors = new ArrayList<>();
+
+    private final Supplier<AugmentedOutput> EMPTY_AUGMENTATION_SUPPPLIER = () -> { return null ;};
 
     /**
      * A buffer that will contain the standard output of any evaluation.
@@ -62,14 +73,6 @@ public class Evaluator {
      * The shell to use for computations.
      */
     JShell jShell;
-
-    /**
-     * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
-     * shared variables and share the same classpath.
-     */
-    public static Evaluator local() {
-        return new Evaluator("local", null);
-    }
 
     /**
      * Spawns an extra process to run the evaluation in, closing the process after evaluation finishes.
@@ -102,88 +105,108 @@ public class Evaluator {
         jShell = buildJShell(outputPrintStream, errorPrintStream);
     }
 
-    private void cleanup() {
-        outputPrintStream = null;
-        outputStorage = null;
-        errorPrintStream = null;
-        errorStorage = null;
-        jShell = null;
+    @Override
+    public void close() {
+        if (outputPrintStream != null) {
+            outputPrintStream.close();
+            outputPrintStream = null;
+        }
+        if (errorPrintStream != null) {
+            errorPrintStream.close();
+            errorPrintStream = null;
+        }
+        try {
+            if (outputStorage != null) {
+                outputStorage.close();
+                outputStorage = null;
+            }
+            if (errorStorage != null) {
+                errorStorage.close();
+                errorStorage = null;
+            }
+        } catch (IOException ex) {
+            // Should we raise a bigger alarm on exceptions in close method?
+            System.out.println("An exception has occured while closing resources: " + ex);
+        }
+        if (jShell != null) {
+            jShell.close();
+            jShell = null;
+        }
     }
 
     /**
      * Builds a new evaluator and evaluates the script.
-     * @param db The database to run the script against
-     * @param request The script to evaluateUnnamed
+     * @param db The database to run the script against.
+     * @param request The script to evaluate.
      * @return The evaluation result
      */
     public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
         if (jShell == null) {
             init();
         }
-        try (
-            var ps = outputPrintStream;
-            var eps = errorPrintStream;
-            var activeShell = jShell;
-        ) {
-            addImports(activeShell, db);
 
-            // jooq connection
-            if (db != null) {
-                var connectionEvent = runSingleSnippet(activeShell, String.format(
-                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
-                        javaString(db.connectionString),
-                        javaString(db.user),
-                        javaString(db.password)
-                ));
+        var activeShell = jShell;
+        addImports(activeShell, db);
 
-                if (connectionEvent.status() != Snippet.Status.VALID) {
-                    return setupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
-                } else if (connectionEvent.exception() != null) {
-                    return setupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
-                }
+        // jooq connection
+        if (db != null) {
+            var connectionEvent = runSingleSnippet(activeShell, String.format(
+                    "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
+                    javaString(db.connectionString),
+                    javaString(db.user),
+                    javaString(db.password)
+            ));
+
+            if (connectionEvent.status() != Snippet.Status.VALID) {
+                return new SetupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
+            } else if (connectionEvent.exception() != null) {
+                return new SetupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
             }
-
-            long startTime = System.currentTimeMillis();
-
-            int humanNewlinesProcessed = 0;
-            SourceCodeAnalysis.CompletionInfo completionInfo = null;
-
-            while (completionInfo == null || !isProcessingComplete(completionInfo)) {
-                final SnippetEvent event;
-                try {
-                    String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
-                    completionInfo = activeShell.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
-                    event = runSingleSnippet(activeShell, completionInfo.source());
-                } catch (Throwable t) {
-                    return jshellError(t);
-                }
-
-                if (event != null) {
-                    switch (event.status()) {
-                        case VALID:
-                            if (event.exception() != null) {
-                                return error(printEvalException(event), startTime);
-                            } else {
-                                if (isProcessingComplete(completionInfo)) {
-                                    return success(createOutput(activeShell, event, outputStorage), new String(errorStorage.toByteArray(), StandardCharsets.UTF_8), startTime);
-                                } else {
-                                    humanNewlinesProcessed += newlinesInString(completionInfo.source());
-                                    break;
-                                }
-                            }
-                        case REJECTED:
-                            return parseError(formatParsingError(humanNewlinesProcessed, activeShell, event));
-                        default:
-                            throw new IllegalStateException("This state was not programmed for, blame the programmer!");
-                    }
-                }
-            }
-
-            // If we didn't return anything by the time we got here, just return this..
-            return success(createOutput(activeShell, null, outputStorage), new String(errorStorage.toByteArray()), startTime);
-        } finally {
-            cleanup();
         }
+
+        long startTime = System.currentTimeMillis();
+
+        int humanNewlinesProcessed = 0;
+        SourceCodeAnalysis.CompletionInfo completionInfo = null;
+
+        while (completionInfo == null || !isProcessingComplete(completionInfo)) {
+            final SnippetEvent event;
+            try {
+                String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
+                completionInfo = activeShell.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
+                event = runSingleSnippet(activeShell, completionInfo.source());
+            } catch (Throwable t) {
+                return new JShellError(t);
+            }
+
+            if (event != null) {
+                switch (event.status()) {
+                    case VALID:
+                        if (event.exception() != null) {
+                            return new EvaluationError(printEvalException(event), System.currentTimeMillis() - startTime);
+                        } else {
+                            if (isProcessingComplete(completionInfo)) {
+                                final String output = createOutput(activeShell, event, outputStorage);
+                                final String errorOut = new String(errorStorage.toByteArray(), StandardCharsets.UTF_8);
+                                final Supplier<AugmentedOutput> augmentationSupplier = () -> JooqGrid.augment(activeShell, event, outputStorage);
+                                return new Success(output, errorOut, System.currentTimeMillis() - startTime, augmentationSupplier);
+                            } else {
+                                humanNewlinesProcessed += newlinesInString(completionInfo.source());
+                                break;
+                            }
+                        }
+                    case REJECTED:
+                        return new ParseError(formatParsingError(humanNewlinesProcessed, activeShell, event));
+                    default:
+                        throw new IllegalStateException("This state was not programmed for, blame the programmer!");
+                }
+            }
+        }
+
+        // If we didn't return anything by the time we got here, just return this..
+        final String output = createOutput(activeShell, null, outputStorage);
+        final String errorOut = new String(errorStorage.toByteArray());
+        return new Success(output, errorOut, System.currentTimeMillis() - startTime, EMPTY_AUGMENTATION_SUPPPLIER);
     }
 
     private static boolean isProcessingComplete(SourceCodeAnalysis.CompletionInfo completionInfo) {
@@ -215,7 +238,7 @@ public class Evaluator {
             var suggestions = activeShell.sourceCodeAnalysis().completionSuggestions(amendedRequest.getScript(), amendedRequest.getCursorPosition(), anchor);
             return new SuggestionResponse(request.getCursorPosition(), anchor[0] + anchorOffset, suggestions);
         } finally {
-            cleanup();
+            close();
         }
     }
 
@@ -251,7 +274,7 @@ public class Evaluator {
 
             return javadocs.stream().map(DocumentationResponse::new).collect(toList());
         } finally {
-            cleanup();
+            close();
         }
     }
 
@@ -339,7 +362,7 @@ public class Evaluator {
         return c == '\n' || c == '\r';
     }
 
-    private static SnippetEvent runSingleSnippet(JShell js, String input) {
+    public static SnippetEvent runSingleSnippet(JShell js, String input) {
         List<SnippetEvent> events = js.eval(input);
         if (events.size() == 0) {
             return null;
@@ -362,6 +385,8 @@ public class Evaluator {
         if (errorStream != null) {
             builder.err(errorStream);
         }
+
+        //builder.remoteVMOptions("-Djava.security.manager=default");
 
         var shell = builder.build();
         if (extraClasspath != null) {

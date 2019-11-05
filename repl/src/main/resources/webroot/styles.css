@@ -266,3 +266,39 @@ html, body, .full-height {
 .requests-in-flight {
     cursor: wait;
 }
+
+/** jOOQ augmented grid */
+table.jooq-grid {
+    position: relative;
+    background-color: white;
+    background-color: #f7f7f7;
+}
+
+table.jooq-grid th {
+    position: sticky;
+    top: 0;
+    background-color: #f7f7f7;
+    padding: 0;
+}
+
+table.jooq-grid th, table.jooq-grid td {
+    padding: 0.1em 0.5em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+table.jooq-grid td.NULL {
+    color: gray;
+    font-style: italic;
+}
+
+table.jooq-grid td.INTEGER,
+table.jooq-grid th.INTEGER,
+table.jooq-grid td.SMALLINT,
+table.jooq-grid th.SMALLINT,
+table.jooq-grid td.NUMERIC,
+table.jooq-grid th.NUMERIC {
+    text-align: right;
+}

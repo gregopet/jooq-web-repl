@@ -13,11 +13,13 @@
  *   - onCommandExecutionFinished: A function to invoke when a command run has finished; will be called with the result object
  *   - keyboardShortcutRoot: if given, keyboard shortcuts will be listened to at this element. Otherwise, they will be registered
  *     on document.
+ *   - augmentors: an array of result augmentations (formatters that can display a nicer view of a result, e.g. grids)
  */
 const Repl = (function(config) {
 
     if (!config || !config.textArea) throw "No textArea provided for REPL initialization!";
     if (!config.resultsPane) throw "No results pane for REPL initialization!";
+    if (!config.augmentors) config.augmentors = [];
 
     let submitButton = registerShortcut({
         ctrl: true, 
@@ -118,7 +120,11 @@ const Repl = (function(config) {
                                 firstResultRead = true;
                                 processMainResult(readResult.value);
                             } else {
-                                console.log("Additional data received", readResult.value); 
+                                config.augmentors.forEach( (augmentor) => {
+                                    if (augmentor.canAugment(readResult.value)) {
+                                        config.resultsPane.normalAlternateResponse(readResult.value.name, augmentor.augment(readResult.value));
+                                    }
+                                });
                             }
                             readFromReader(reader);
                         }

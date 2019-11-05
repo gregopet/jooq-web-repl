@@ -1,6 +1,6 @@
 package co.petrin;
 
-import co.petrin.function.TriFunction;
+import co.petrin.response.Success;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
@@ -88,12 +88,10 @@ public class ScriptHandler {
             var response = getEvaluator(ctx).evaluate(db, req);
             ctx.put(EVALUATION_RESULT_KEY, response);
             ctx.next();
-
-            prepareEvaluator();
         }).handler(ctx -> {
             EvaluationResponse response = ctx.get(EVALUATION_RESULT_KEY);
             int returnStatus = 200;
-            if (response != null && response.isError()) {
+            if (response != null && !response.getEvaluationStatus().success) {
                 returnStatus = 400;
             }
 
@@ -101,8 +99,18 @@ public class ScriptHandler {
                 .setChunked(true)
                 .setStatusCode(returnStatus)
                 .putHeader("content-type", "application/json; charset=UTF-8")
-                .write(Json.encode(response))
-                .end(NEWLINE_BUFFER);
+                .write(Json.encode(response));
+
+            // TODO: this should be done asynchronously!
+            if (response instanceof Success) {
+                var success = (Success)response;
+                var augmentedOutput = success.augmentedOutput.get();
+                if (augmentedOutput != null) {
+                    ctx.response().write(NEWLINE_BUFFER).write(Json.encode(augmentedOutput));
+                }
+            }
+
+            ctx.response().end(NEWLINE_BUFFER);
         });
 
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/suggest").blockingHandler(ctx -> {
@@ -113,8 +121,7 @@ public class ScriptHandler {
         }).handler(ctx -> ctx
             .response()
             .putHeader("content-type", "application/json; charset=UTF-8")
-            .end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))))
-        ;
+            .end(Json.encode(ctx.get(EVALUATION_RESULT_KEY))));
 
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/javadoc").blockingHandler(ctx -> {
             Database db = ctx.get(DATABASE_CTX_KEY);
@@ -149,6 +156,7 @@ public class ScriptHandler {
     private Evaluator getEvaluator(RoutingContext ctx) {
         var evaluator = Objects.requireNonNullElseGet(evaluators.poll(), this::createEvaluator);
         ctx.response().closeHandler(ch -> evaluator.stop());
+        ctx.response().endHandler(eh -> evaluator.close());
         return evaluator;
     }
 

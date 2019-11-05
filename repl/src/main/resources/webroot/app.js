@@ -25,7 +25,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         databaseProvider: DatabaseChooser(document.querySelector("#database-select")),
         commandCheatSheet: BootstrapListCheatSheet(document.getElementById('shortcut-list')),
         onCommandExecutionStarted: () => { resultsLoader.style.display = 'block' },
-        onCommandExecutionFinished: () => { resultsLoader.style.display = 'none' }
+        onCommandExecutionFinished: () => { resultsLoader.style.display = 'none' },
+        augmentors: [ jooqGrid ]
     });
     Javadoc(editor);
     Storage(editor);

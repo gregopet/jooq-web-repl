@@ -10,6 +10,11 @@ import Repl, { REPLOptions } from './Repl';
 import 'codemirror/mode/clike/clike';
 import 'codemirror/addon/hint/show-hint';
 
+// We also need a few CSS files
+import '../styles.css'
+import 'bootstrap/dist/css/bootstrap.css'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/addon/hint/show-hint.css'
 
 
 document.addEventListener("DOMContentLoaded", function(event) {

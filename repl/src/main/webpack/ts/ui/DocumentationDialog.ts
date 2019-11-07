@@ -56,7 +56,7 @@ export default class DocumentationDialog {
             this.editor.backgroundRequestFinished();
             return resp.json()
         })
-        .then(docs => {
+        .then( (docs: DocumentationResponse[]) => {
             this.latestJavadocs = docs.map( (javadoc, idx) => {
                 const positionString = docs.length == 0 ? "" : " " + (idx + 1) + "/" + docs.length
                 return {

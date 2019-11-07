@@ -1,5 +1,3 @@
-import { EvaluationResult } from "../repl-temp";
-
 /**
  * A ResultsPane that is a simple <pre> element.
   */
@@ -42,7 +40,7 @@ export default class ResultPanel {
      * Execution was performed on the server (successfully or not)
      * @param a deserialized EvaluationResponse sent by the server
      */
-    normally(result: EvaluationResult) {
+    normally(result: Success) {
         this.clear();
         this.preElement.innerText = result.output;
         this.parent.classList.toggle('completed-with-error', result.evaluationStatus != 'SUCCESS')

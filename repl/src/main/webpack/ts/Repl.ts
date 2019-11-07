@@ -200,12 +200,12 @@ export default class Repl {
             this.backgroundRequestFinished();
             return resp.json();
         })
-        .then( (x) => this.mapSuggestions(x))
+        .then( (x: SuggestionResponse) => this.mapSuggestions(x))
         .catch ( err => { this.config.resultsPane.networkError("Network error submitting query to server!\n" + err)});
     }
 
     /** Maps the returned suggestions to a format our editor can understand */
-    private mapSuggestions(result) {
+    private mapSuggestions(result: SuggestionResponse) {
         // Remove duplicates and display non-matching suggestions last (suggestions come pre-sorted alphabetically)
         let lastAdded = undefined;
         let matchType = [];
@@ -230,9 +230,9 @@ export default class Repl {
     }
 
     /**
-    * Constructs a payload that can be sent to the server for evaluation, representing the current state of the snippet.
-    */
-   getSnippet() {
+     * Constructs a payload that can be sent to the server for evaluation, representing the current state of the snippet.
+     */
+   getSnippet(): EvaluationRequest {
         return {
             script: this.editor.getValue(),
             cursorPosition:  this.editor.indexFromPos(this.editor.getCursor())
@@ -262,7 +262,7 @@ export default class Repl {
     }
 
     /** Reads the document cookies and retrieves the CSRF token, if present; otherwise, an empty string is returned */
-    getCSRFFromCookie() {
+    getCSRFFromCookie(): string {
         var match = document.cookie.match(new RegExp('(^| )' + 'X-CSRF' + '=([^;]+)'));
         if (match) return match[2]; else return "";
     }

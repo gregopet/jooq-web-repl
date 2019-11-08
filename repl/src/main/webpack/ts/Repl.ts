@@ -2,6 +2,8 @@ import CommandWindow from "./ui/CommandPanel";
 import * as debounce from "debounce-promise";
 import * as ndjsonStream from "can-ndjson-stream";
 import * as CodeMirror from 'codemirror';
+import ResultPanel from "./ui/ResultPanel";
+import Augmentor from "./augmentedResponse/Augmentor";
 
 export interface REPLOptions {
     /** 
@@ -12,7 +14,7 @@ export interface REPLOptions {
     /** 
      * This is where our results will be displayed 
      */
-    resultsPane: any;
+    resultsPane: ResultPanel;
 
     /** 
      * A function we can call to get the currently selected database (or null if no DB is selected) 
@@ -43,7 +45,7 @@ export interface REPLOptions {
     /**
      * An array of result augmentations (formatters that can display a nicer view of a result, e.g. grids).
      */
-    augmentors?: any;
+    augmentors?: Augmentor[];
 }
 
 export default class Repl {
@@ -145,28 +147,38 @@ export default class Repl {
             if (this.submitButton) (this.submitButton as HTMLButtonElement).disabled = false;
             const contentType = resp.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
-                let firstResultRead = false;
-
-                const processMainResult = (result) => {
-                    this.config.resultsPane.normally(result);
-                    if (result.errorOutput) {
-                        // TODO: refactor the error creation into a class?
-                        const log = document.createElement("pre");
-                        log.innerHTML = result.errorOutput;
-                        this.config.resultsPane.normalAlternateResponse("Log", log);
+                const processMainResult = (result: EvaluationResponse) => {
+                    switch (result.evaluationStatus) {
+                        case "SUCCESS":
+                            const success = result as Success;
+                            this.config.resultsPane.normally(success, false);
+                            if (success.errorOutput) {
+                                // TODO: refactor the error creation into a class?
+                                const log = document.createElement("pre");
+                                log.innerHTML = success.errorOutput;
+                                this.config.resultsPane.normalAlternateResponse("Log", log);
+                            }
+                            break;
+                        case "EVALUATION_ERROR":
+                            const evalError = result as EvaluationError;
+                            this.config.resultsPane.normally(evalError, true);
+                            break;
+                        default:
+                            const error = result as Error;
+                            this.config.resultsPane.serverError(error.error, resp.status);
                     }
                 };
 
                 const readFromReader = (reader) => {
                     reader.read().then( (readResult) => {
                         if (!readResult.done) {
-                            if (!firstResultRead) {
-                                firstResultRead = true;
-                                processMainResult(readResult.value);
+                            if (readResult.value.evaluationStatus) {
+                                processMainResult(readResult.value as EvaluationResponse);
                             } else {
+                                const augmentedResult = readResult.value as AugmentedOutput;
                                 this.config.augmentors.forEach( (augmentor) => {
-                                    if (augmentor.canAugment(readResult.value)) {
-                                        this.config.resultsPane.normalAlternateResponse(readResult.value.name, augmentor.augment(readResult.value));
+                                    if (augmentor.canAugment(augmentedResult)) {
+                                        this.config.resultsPane.normalAlternateResponse(augmentedResult.name, augmentor.augment(augmentedResult));
                                     }
                                 });
                             }

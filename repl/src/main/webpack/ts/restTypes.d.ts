@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.18.565 on 2019-11-06 18:54:42.
+// Generated using typescript-generator version 2.18.565 on 2019-11-07 06:38:26.
 
 interface EvaluationRequest {
     script: string;
@@ -29,6 +29,15 @@ interface Success extends EvaluationResponse {
     errorOutput: string;
     durationInMs: number;
     augmentedOutput: Supplier<AugmentedOutput>;
+}
+
+interface Error extends EvaluationResponse {
+    error: string;
+}
+
+interface EvaluationError extends Error {
+    output: string;
+    durationInMs: number;
 }
 
 interface Suggestion {

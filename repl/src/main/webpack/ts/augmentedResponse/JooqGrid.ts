@@ -1,37 +1,32 @@
-const jooqGrid = (function() {
-
-    function canAugment(data) {
-        if (data.type && data.type == 'json/jooq-grid') {
-            return true;
-        } else {
-            return false;
-        }
+export default class JooqGrid {
+    canAugment(data: AugmentedOutput): boolean {
+        return data.type == 'json/jooq-grid';
     }
 
-    function augment(data) {
+    augment(data: AugmentedOutput): HTMLElement {
         var json = JSON.parse(data.output);
         var table = document.createElement("table");
         table.classList.add("jooq-grid");
 
-        table.appendChild(createHeader(json));
-        table.appendChild(createBody(json));
+        table.appendChild(this.createHeader(json));
+        table.appendChild(this.createBody(json));
 
         return table;
     }
 
     // header
 
-    function createHeader(json) {
+    private createHeader(json) {
         var thead = document.createElement("thead");
         var tr = document.createElement("tr");
         thead.appendChild(tr);
 
-        json.fields.map(createColumn).forEach((col) => tr.appendChild(col));
+        json.fields.map(this.createColumn).forEach((col) => tr.appendChild(col));
 
         return thead;
     }
 
-    function createColumn(json) {
+    private createColumn(json) {
         var col = document.createElement("th");
         col.title = json.table + "." + json.name + " (" + json.type + ")";
         col.innerText = json.name;
@@ -41,21 +36,21 @@ const jooqGrid = (function() {
 
     // body
 
-    function createBody(json) {
+    private createBody(json) {
         var body = document.createElement("tbody");
-        json.records.map( (rec) =>  createRow(json, rec)).forEach( (row) => body.appendChild(row));
+        json.records.map( (rec) => this.createRow(json, rec)).forEach( (row) => body.appendChild(row));
         return body;
     }
 
-    function createRow(json, row) {
+    private createRow(json, row) {
         var tr = document.createElement("tr");
         for (let a = 0; a < json.fields.length; a++) {
-            tr.appendChild(createCell(json.fields[a], row[a]));
+            tr.appendChild(this.createCell(json.fields[a], row[a]));
         }
         return tr;
     }
 
-    function createCell(field, content) {
+    private createCell(field, content) {
         var td = document.createElement("td");
         td.classList.add(field.type);
         if (content === null) {
@@ -67,9 +62,4 @@ const jooqGrid = (function() {
         }
         return td;
     }
-
-    return {
-        canAugment: canAugment,
-        augment: augment
-    }
-})();
+}

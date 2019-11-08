@@ -38,12 +38,13 @@ export default class ResultPanel {
 
     /**
      * Execution was performed on the server (successfully or not)
-     * @param a deserialized EvaluationResponse sent by the server
+     * @param result The result of the evaluation
+     * @param errorOccured If true, then the evaluation threw an uncaught exception
      */
-    normally(result: Success) {
+    normally(result: Success | EvaluationError, errorOccured: boolean) {
         this.clear();
         this.preElement.innerText = result.output;
-        this.parent.classList.toggle('completed-with-error', result.evaluationStatus != 'SUCCESS')
+        this.parent.classList.toggle('completed-with-error', errorOccured)
     }
 
     /**

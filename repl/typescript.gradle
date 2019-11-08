@@ -20,6 +20,8 @@ generateTypeScript {
         'co.petrin.AugmentedOutput',
         'co.petrin.DocumentationResponse',
         'co.petrin.SuggestionResponse',
-        'co.petrin.response.Success'
+        'co.petrin.response.Success',
+        'co.petrin.response.Error',
+        'co.petrin.response.EvaluationError',
     ]
 }

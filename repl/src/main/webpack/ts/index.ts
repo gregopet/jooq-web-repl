@@ -15,6 +15,7 @@ import '../styles.css'
 import 'bootstrap/dist/css/bootstrap.css'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/addon/hint/show-hint.css'
+import JooqGrid from './augmentedResponse/JooqGrid';
 
 
 document.addEventListener("DOMContentLoaded", function(event) {
@@ -46,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         commandCheatSheet: new CommandPanel(document.getElementById('shortcut-list') as HTMLUListElement),
         onCommandExecutionStarted: () => { resultsLoader.style.display = 'block' },
         onCommandExecutionFinished: () => { resultsLoader.style.display = 'none' },
-        //augmentors: [ jooqGrid ]
+        augmentors: [ new JooqGrid() ]
     }; 
 
     const editor = new Repl(replOptions);

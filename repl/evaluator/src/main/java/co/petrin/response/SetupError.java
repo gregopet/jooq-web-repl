@@ -5,7 +5,7 @@ import co.petrin.EvaluationResponse;
 /**
  * An error occured setting up the evaluator.
  */
-public class SetupError implements EvaluationResponse {
+public class SetupError implements Error {
 
     public final String error;
 
@@ -16,5 +16,10 @@ public class SetupError implements EvaluationResponse {
     @Override
     public Status getEvaluationStatus() {
         return Status.SETUP_ERROR;
+    }
+
+    @Override
+    public String getError() {
+        return error;
     }
 }

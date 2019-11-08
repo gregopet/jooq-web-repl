@@ -5,7 +5,7 @@ import co.petrin.EvaluationResponse;
 /**
  * Script evaluation resulted in an error.
  */
-public class EvaluationError implements EvaluationResponse {
+public class EvaluationError implements Error {
     public final String output;
     public final long durationInMs;
 
@@ -17,5 +17,10 @@ public class EvaluationError implements EvaluationResponse {
     @Override
     public Status getEvaluationStatus() {
         return Status.EVALUATION_ERROR;
+    }
+
+    @Override
+    public String getError() {
+        return output;
     }
 }

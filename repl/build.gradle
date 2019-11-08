@@ -1,3 +1,5 @@
+
+
 buildscript {
     project.ext.jooqVersion = System.getenv("REPL_JOOQ_VERSION") ?: "3.11.9"
     repositories {
@@ -23,6 +25,9 @@ plugins {
   id 'application'
   id 'com.github.johnrengelman.shadow' version '4.0.2'
 }
+
+apply from: 'typescript.gradle'
+
 subprojects {
   apply plugin: 'java'
 

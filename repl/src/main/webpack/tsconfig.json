@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+      "outDir": "./build/",
+      "module": "es6",
+      "target": "es5",
+      "allowJs": true,
+      "lib": ["dom", "es2015", "es2016", "es2018.promise"]
+    },
+    "include": [
+      "ts/**/*.ts",
+      "./node_modules/@types/codemirror/codemirror-showhint.d.ts"
+    ]
+}

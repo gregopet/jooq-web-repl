@@ -5,7 +5,7 @@ import co.petrin.EvaluationResponse;
 /**
  * JShell threw an error while evaluating the script.
  */
-public class JShellError implements EvaluationResponse {
+public class JShellError implements Error {
 
     public final Throwable error;
 
@@ -16,5 +16,10 @@ public class JShellError implements EvaluationResponse {
     @Override
     public Status getEvaluationStatus() {
         return Status.JSHELL_ERROR;
+    }
+
+    @Override
+    public String getError() {
+        return error != null ? error.getMessage() : null;
     }
 }

@@ -1,11 +1,28 @@
 /**
  * A cheatsheet that puts hotkeys into a bootstrap list.
- * Provides a single public method:
- * @param listDom The DOM node of a list into which LIs will be inserted
- * @return The button that was created
  */
-const BootstrapListCheatSheet = function(listDom) {
-    function addShortcut(ctrl, alt, shift, key, hint, action) {
+export default class CommandPanel {
+    
+    listDom: HTMLOListElement | HTMLUListElement;
+
+    /**
+     * Create a new command window and append it to the provided list.
+     * @param listDom The DOM node of a list into which LIs will be inserted
+     */
+    constructor(listDom: HTMLOListElement | HTMLUListElement) {
+        this.listDom = listDom;
+    }
+
+    /**
+     * Adds a shortcut to the commnad window.
+     * @param ctrl Must the control key be pressed to activate this action?
+     * @param alt Must the alt key be pressed to activate this action?
+     * @param shift Must the shift key be pressed to activate this action?
+     * @param key The key that needs to be pressed to activate this action
+     * @param hint The text to display next to the action
+     * @param action The action to perform on click
+     */
+    addShortcut(ctrl: boolean, alt: boolean, shift: boolean, key: string, hint: string, action): HTMLButtonElement {
         if (hint) {
             let names = []
             if (ctrl) names.push("Ctrl")
@@ -15,7 +32,7 @@ const BootstrapListCheatSheet = function(listDom) {
             const keyName = names.join(" + ")
 
             const container = document.createElement("li");
-            listDom.appendChild(container);
+            this.listDom.appendChild(container);
 
             const button = document.createElement("button");
             button.classList.add("btn");
@@ -35,9 +52,5 @@ const BootstrapListCheatSheet = function(listDom) {
 
             return button;
         }
-    }
-
-    return {
-        addShortcut : addShortcut
     }
 }

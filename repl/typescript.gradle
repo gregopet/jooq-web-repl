@@ -1,0 +1,27 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath group: 'cz.habarta.typescript-generator', name: 'typescript-generator-gradle-plugin', version: '2.18.+'
+    }
+}
+// Plugin class name has to be used when importing scripts, see
+// https://discuss.gradle.org/t/how-do-i-include-buildscript-block-from-external-gradle-script/7016
+apply plugin: cz.habarta.typescript.generator.gradle.TypeScriptGeneratorPlugin
+
+generateTypeScript {
+    jsonLibrary = 'jackson2'
+    outputFile = 'src/main/webpack/ts/restTypes.d.ts'
+    outputKind = 'global'
+    classes = [
+        'co.petrin.EvaluationRequest',
+        'co.petrin.AugmentedOutput',
+        'co.petrin.DocumentationResponse',
+        'co.petrin.SuggestionResponse',
+        'co.petrin.response.Success',
+        'co.petrin.response.Error',
+        'co.petrin.response.EvaluationError',
+    ]
+}

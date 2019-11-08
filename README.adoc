@@ -131,3 +131,11 @@ For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 
 `DATABASE_OLD_POSTGRES_URL`, `DATABASE_OLD_POSTGRES_USER`,
 `DATABASE_OLD_POSTGRES_PASSWORD`.
+
+== Customizing the UI
+
+The UI is a TypeScript application packaged via Webpack. To build it
+run `npm install` and `npm run build` in the `repl/src/main/webpack` directory.
+The build process will copy the CSS and JS files to the application's web root
+(the latest builds are commited into git to keep things simple). To get a dev
+build run `npm run build:dev`.

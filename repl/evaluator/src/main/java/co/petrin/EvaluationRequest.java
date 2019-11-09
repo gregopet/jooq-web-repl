@@ -30,6 +30,18 @@ public class EvaluationRequest {
         this.cursorPosition = cursorPosition;
     }
 
+    /**
+     * Creates an evaluation request with the cursor position after the end of the input.
+     * @param script The script to evaluate.
+     */
+    public EvaluationRequest(String script) {
+        if (script == null) {
+            script = "";
+        }
+        this.script = script;
+        this.cursorPosition = script.length();
+    }
+
     public EvaluationRequest() {
     }
 }

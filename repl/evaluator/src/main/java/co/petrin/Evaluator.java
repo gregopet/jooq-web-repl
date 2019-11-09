@@ -156,11 +156,18 @@ public class Evaluator implements AutoCloseable {
                     javaString(db.user),
                     javaString(db.password)
             ));
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        boolean runningLocally = isLocalMode();
 
             if (connectionEvent.status() != Snippet.Status.VALID) {
                 return new SetupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
             } else if (connectionEvent.exception() != null) {
                 return new SetupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
+        try {
+            if (runningLocally) {
+                System.setOut(outputPrintStream);
+                System.setErr(errorPrintStream);
             }
         }
 
@@ -207,6 +214,18 @@ public class Evaluator implements AutoCloseable {
         final String output = createOutput(activeShell, null, outputStorage);
         final String errorOut = new String(errorStorage.toByteArray());
         return new Success(output, errorOut, System.currentTimeMillis() - startTime, EMPTY_AUGMENTATION_SUPPPLIER);
+        } finally {
+            if (runningLocally) {
+                System.setOut(originalOut);
+                System.setErr(originalErr);
+            }
+            if (outputStorage != null) {
+                outputStorage.reset();
+            }
+            if (errorStorage != null) {
+                errorStorage.reset();
+            }
+        }
     }
 
     private static boolean isProcessingComplete(SourceCodeAnalysis.CompletionInfo completionInfo) {
@@ -485,5 +504,10 @@ public class Evaluator implements AutoCloseable {
         } else {
             return req;
         }
+    }
+
+    /** Are we running the shell in local (as opposed to remote) mode? */
+    private boolean isLocalMode() {
+        return this.mode != null && this.mode.contains("local");
     }
 }

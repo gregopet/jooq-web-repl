@@ -34,13 +34,16 @@ class NativeEvaluatorSpec extends Specification {
         !Evaluator.local().evaluate(null, new EvaluationRequest("spock.lang.Specification.class", 0)).error
     }
 
-    def "Local evaluator does not capture standard output"() {
-        given: 'an evaluator'
-        def eval = Evaluator.local()
+    def "Local evaluator captures standard & error outputs"() {
+        given:
+        def result = (Success)Evaluator.local().evaluate(null, new EvaluationRequest("""
+            System.out.print("a box");
+            System.err.print("a tree");
+        """))
 
         expect: 'neither standard output nor standard error to be captured'
-        eval.evaluate(null, new EvaluationRequest('System.out.print("haha");"lala"', 0)).output == 'lala'
-        eval.evaluate(null, new EvaluationRequest('System.err.print("haha");"lala"', 0)).output == 'lala'
+        result.errorOutput == "a tree"
+        result.output == "a box"
     }
 
     @Timeout(10)

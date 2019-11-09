@@ -92,6 +92,14 @@ public class Evaluator implements AutoCloseable {
         return new Evaluator(spec, extraClasspath);
     }
 
+    /**
+     * Creates an evaluator that runs in the same process as the calling code. This makes it possible to access
+     * shared variables and share the same classpath.
+     */
+    public static Evaluator local() {
+        return new Evaluator("local", null);
+    }
+
     private Evaluator(String mode, List<String> extraClasspath) {
         this.mode = mode;
         this.extraClasspath = extraClasspath;
@@ -148,72 +156,75 @@ public class Evaluator implements AutoCloseable {
         var activeShell = jShell;
         addImports(activeShell, db);
 
-        // jooq connection
-        if (db != null) {
-            var connectionEvent = runSingleSnippet(activeShell, String.format(
-                    "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
-                    javaString(db.connectionString),
-                    javaString(db.user),
-                    javaString(db.password)
-            ));
         PrintStream originalOut = System.out;
         PrintStream originalErr = System.err;
         boolean runningLocally = isLocalMode();
 
-            if (connectionEvent.status() != Snippet.Status.VALID) {
-                return new SetupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
-            } else if (connectionEvent.exception() != null) {
-                return new SetupError("An exception occurred connecting to the database: " +  printEvalException(connectionEvent));
         try {
             if (runningLocally) {
                 System.setOut(outputPrintStream);
                 System.setErr(errorPrintStream);
             }
-        }
 
-        long startTime = System.currentTimeMillis();
+            // jooq connection
+            if (db != null) {
+                var connectionEvent = runSingleSnippet(activeShell, String.format(
+                        "var jooq = org.jooq.impl.DSL.using(%s, %s, %s);",
+                        javaString(db.connectionString),
+                        javaString(db.user),
+                        javaString(db.password)
+                ));
 
-        int humanNewlinesProcessed = 0;
-        SourceCodeAnalysis.CompletionInfo completionInfo = null;
-
-        while (completionInfo == null || !isProcessingComplete(completionInfo)) {
-            final SnippetEvent event;
-            try {
-                String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
-                completionInfo = activeShell.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
-                event = runSingleSnippet(activeShell, completionInfo.source());
-            } catch (Throwable t) {
-                return new JShellError(t);
-            }
-
-            if (event != null) {
-                switch (event.status()) {
-                    case VALID:
-                        if (event.exception() != null) {
-                            return new EvaluationError(printEvalException(event), System.currentTimeMillis() - startTime);
-                        } else {
-                            if (isProcessingComplete(completionInfo)) {
-                                final String output = createOutput(activeShell, event, outputStorage);
-                                final String errorOut = new String(errorStorage.toByteArray(), StandardCharsets.UTF_8);
-                                final Supplier<AugmentedOutput> augmentationSupplier = () -> JooqGrid.augment(activeShell, event, outputStorage);
-                                return new Success(output, errorOut, System.currentTimeMillis() - startTime, augmentationSupplier);
-                            } else {
-                                humanNewlinesProcessed += newlinesInString(completionInfo.source());
-                                break;
-                            }
-                        }
-                    case REJECTED:
-                        return new ParseError(formatParsingError(humanNewlinesProcessed, activeShell, event));
-                    default:
-                        throw new IllegalStateException("This state was not programmed for, blame the programmer!");
+                if (connectionEvent.status() != Snippet.Status.VALID) {
+                    return new SetupError("Error creating a database object:\n" + formatParsingError(0, activeShell, connectionEvent));
+                } else if (connectionEvent.exception() != null) {
+                    return new SetupError("An exception occurred connecting to the database: " + printEvalException(connectionEvent));
                 }
             }
-        }
 
-        // If we didn't return anything by the time we got here, just return this..
-        final String output = createOutput(activeShell, null, outputStorage);
-        final String errorOut = new String(errorStorage.toByteArray());
-        return new Success(output, errorOut, System.currentTimeMillis() - startTime, EMPTY_AUGMENTATION_SUPPPLIER);
+            long startTime = System.currentTimeMillis();
+
+            int humanNewlinesProcessed = 0;
+            SourceCodeAnalysis.CompletionInfo completionInfo = null;
+
+            while (completionInfo == null || !isProcessingComplete(completionInfo)) {
+                final SnippetEvent event;
+                try {
+                    String toEvaluate = completionInfo == null ? request.getScript() : completionInfo.remaining();
+                    completionInfo = activeShell.sourceCodeAnalysis().analyzeCompletion(toEvaluate);
+                    event = runSingleSnippet(activeShell, completionInfo.source());
+                } catch (Throwable t) {
+                    return new JShellError(t);
+                }
+
+                if (event != null) {
+                    switch (event.status()) {
+                        case VALID:
+                            if (event.exception() != null) {
+                                return new EvaluationError(printEvalException(event), System.currentTimeMillis() - startTime);
+                            } else {
+                                if (isProcessingComplete(completionInfo)) {
+                                    final String output = createOutput(activeShell, event, outputStorage);
+                                    final String errorOut = new String(errorStorage.toByteArray(), StandardCharsets.UTF_8);
+                                    final Supplier<AugmentedOutput> augmentationSupplier = () -> JooqGrid.augment(activeShell, event, outputStorage);
+                                    return new Success(output, errorOut, System.currentTimeMillis() - startTime, augmentationSupplier);
+                                } else {
+                                    humanNewlinesProcessed += newlinesInString(completionInfo.source());
+                                    break;
+                                }
+                            }
+                        case REJECTED:
+                            return new ParseError(formatParsingError(humanNewlinesProcessed, activeShell, event));
+                        default:
+                            throw new IllegalStateException("This state was not programmed for, blame the programmer!");
+                    }
+                }
+            }
+
+            // If we didn't return anything by the time we got here, just return this..
+            final String output = createOutput(activeShell, null, outputStorage);
+            final String errorOut = new String(errorStorage.toByteArray());
+            return new Success(output, errorOut, System.currentTimeMillis() - startTime, EMPTY_AUGMENTATION_SUPPPLIER);
         } finally {
             if (runningLocally) {
                 System.setOut(originalOut);
@@ -318,11 +329,11 @@ public class Evaluator implements AutoCloseable {
     private String createOutput(JShell js, SnippetEvent finalEvent, ByteArrayOutputStream executionOutput) {
         if (finalEvent.snippet().kind() == Snippet.Kind.VAR) {
             // if last thing was a variable declaration, print that variable out!
-            runSingleSnippet(js, "System.out.println(" + ((VarSnippet)finalEvent.snippet()).name() + ");");
+            runSingleSnippet(js, "System.out.print(" + ((VarSnippet)finalEvent.snippet()).name() + ");");
         }
         else if (finalEvent.snippet().kind() == Snippet.Kind.EXPRESSION) {
             // if last thing was an expression, print that expression's value into the stream
-            executionOutput.writeBytes(finalEvent.value().getBytes(StandardCharsets.UTF_8));
+            runSingleSnippet(js, "System.out.print(" + ((ExpressionSnippet)finalEvent.snippet()).name() + ");");
         }
         return StringUtils.defaultIfBlank(executionOutput.toString(StandardCharsets.UTF_8), "");
     }

@@ -30,6 +30,7 @@ class DockerfileSpec extends Specification {
             .withFileFromPath("src", projectDir.resolve("src"))
             .withFileFromPath("evaluator", projectDir.resolve("evaluator"))
             .withFileFromPath("build.gradle", projectDir.resolve("build.gradle"))
+            .withFileFromPath("typescript.gradle", projectDir.resolve("typescript.gradle"))
             .withFileFromPath("settings.gradle", projectDir.resolve("settings.gradle"))
             .withFileFromPath("gradle.properties", projectDir.resolve("gradle.properties"))
             .withFileFromPath("build_and_run_as_guest.sh", projectDir.resolve("build_and_run_as_guest.sh"))
@@ -48,7 +49,7 @@ class DockerfileSpec extends Specification {
 
     AsyncConditions checkScriptOutput(String script, GenericContainer container, Closure evalBlock) {
         def async = new AsyncConditions(1)
-        getHttpClient(container).post("/databases/eval").sendJson(new EvaluationRequest(script, 0)) { r ->
+        getHttpClient(container).post("/databases/eval").sendJson(new EvaluationRequest(script)) { r ->
             async.evaluate { evalBlock(r.result()?.bodyAsJsonObject()?.getString("output"), r) }
         }
         return async

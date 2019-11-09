@@ -5,7 +5,7 @@ COPY gradlew ./
 RUN ["./gradlew", "--no-daemon"]
 COPY extra-libs ./extra-libs
 COPY extra-source-files ./extra-source-files
-COPY build.gradle gradle.properties settings.gradle ./
+COPY build.gradle typescript.gradle gradle.properties settings.gradle ./
 COPY evaluator ./evaluator
 COPY src ./src
 COPY build_and_run_as_guest.sh ./

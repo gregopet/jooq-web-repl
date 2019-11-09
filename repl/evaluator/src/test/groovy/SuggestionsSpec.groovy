@@ -10,7 +10,7 @@ class SuggestionsSpec extends Specification {
 
     def "Methods are suggested"() {
         when:
-        def suggestions = evaluator.suggest(null, new EvaluationRequest('"abc".su', 8))
+        def suggestions = evaluator.suggest(null, new EvaluationRequest('"abc".su'))
 
         then: 'the current cursor position is reported back to the calling code'
         suggestions.cursor == 8
@@ -24,7 +24,7 @@ class SuggestionsSpec extends Specification {
 
     def "Imports are suggested"() {
         when:
-        def suggestions = evaluator.suggest(null, new EvaluationRequest('import java.io.Fil', 18))
+        def suggestions = evaluator.suggest(null, new EvaluationRequest('import java.io.Fil'))
 
         then: 'the current cursor position is reported back to the calling code'
         suggestions.cursor == 18
@@ -45,7 +45,7 @@ class SuggestionsSpec extends Specification {
             "abc".su"""
 
         when: 'asking for suggestions for that script'
-        def suggestions = evaluator.suggest(null, new EvaluationRequest(script, script.length()))
+        def suggestions = evaluator.suggest(null, new EvaluationRequest(script))
 
         then: 'suggestions are given'
         suggestions.suggestions.find { it.continuation == "substring(" }

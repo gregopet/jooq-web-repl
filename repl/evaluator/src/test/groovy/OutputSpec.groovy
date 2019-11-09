@@ -1,4 +1,5 @@
 import co.petrin.EvaluationRequest
+import co.petrin.EvaluationResponse
 import co.petrin.Evaluator
 import spock.lang.Specification
 import spock.lang.Subject
@@ -8,27 +9,35 @@ class OutputSpec extends Specification {
 
     @Subject Evaluator evaluator = Evaluator.local()
 
+    def "Same evaluator can be invoked multiple times"() {
+        expect:
+        evaluator.evaluate(null, new EvaluationRequest('System.out.print("a")')).output == "a"
+        evaluator.evaluate(null, new EvaluationRequest('System.out.print("b")')).output == "b"
+        evaluator.evaluate(null, new EvaluationRequest('System.err.print("1")')).errorOutput == "1"
+        evaluator.evaluate(null, new EvaluationRequest('System.err.print("2")')).errorOutput == "2"
+    }
+
     def "Value of evaluated expression is turned into string and returned"() {
         when: 'expression is run standalone'
-        def result = evaluator.evaluate(null, new EvaluationRequest(input, 0))
+        def result = evaluator.evaluate(null, new EvaluationRequest(input))
 
         then: 'output should be as expected'
         result.output == expectedOutput
-        !result.error
+        result.evaluationStatus == EvaluationResponse.Status.SUCCESS
 
         when: 'expression is assigned to a variable'
-        result = evaluator.evaluate(null, new EvaluationRequest('var x = ' + input, 0))
+        result = evaluator.evaluate(null, new EvaluationRequest('var x = ' + input))
 
         then: 'the output is still the same'
         result.output == expectedOutput
-        !result.error
+        result.evaluationStatus == EvaluationResponse.Status.SUCCESS
 
         when: 'expression is assigned to a variable and that variable is then evaled'
-        result = evaluator.evaluate(null, new EvaluationRequest('var x = ' + input + '; x;', 0))
+        result = evaluator.evaluate(null, new EvaluationRequest('var x = ' + input + '; x;'))
 
         then: 'the output is still the same'
         result.output == expectedOutput
-        !result.error
+        result.evaluationStatus == EvaluationResponse.Status.SUCCESS
 
         where:
         input                                 | expectedOutput
@@ -47,16 +56,16 @@ class OutputSpec extends Specification {
 
     def "Only value of last expression is returned"() {
         expect:
-        evaluator.evaluate(null, new EvaluationRequest("1 + 2; 3 + 4", 0)).output == "7"
+        evaluator.evaluate(null, new EvaluationRequest("1 + 2; 3 + 4")).output == "7"
     }
 
     def "Parsing exceptions are reported back with line & column information"() {
         when:
-        def result = evaluator.evaluate(null, new EvaluationRequest(input, 0))
+        def result = evaluator.evaluate(null, new EvaluationRequest(input))
 
         then:
-        result.output == expectedOutput
-        result.error
+        result.error == expectedOutput
+        result.evaluationStatus == EvaluationResponse.Status.PARSE_ERROR
 
         where:
         input          | expectedOutput
@@ -66,11 +75,11 @@ class OutputSpec extends Specification {
 
     def "Runtime exceptions are reported back with line & column information"() {
         when:
-        def result = evaluator.evaluate(null, new EvaluationRequest(input, 0))
+        def result = evaluator.evaluate(null, new EvaluationRequest(input))
 
         then:
-        result.output == expectedOutput
-        result.error
+        result.error == expectedOutput
+        result.evaluationStatus == EvaluationResponse.Status.EVALUATION_ERROR
 
         where:
         input               | expectedOutput
@@ -87,6 +96,6 @@ class OutputSpec extends Specification {
         """.stripIndent()
 
         expect: 'error to be reported in the correct place'
-        evaluator.evaluate(null, new EvaluationRequest(script, 0)).output == 'unclosed string literal (row 4, character 0)'
+        evaluator.evaluate(null, new EvaluationRequest(script)).error == 'unclosed string literal (row 4, character 0)'
     }
 }

@@ -103,6 +103,23 @@ separate individual dependencies by splitting them any whitespace character -
 newlines work pretty good in a docker compose YAML file.
 
 
+=== Sandboxing
+
+You can sandbox the REPL by running the evaluations under Java's security
+manager with whitelisted rules only including the permissions strictly necessary
+to run database queries. This will disallow access to the underlying filesystem, 
+OS and connecting to any network host not specifically allowed.
+
+To use this feature provide a `USE_JAVA_SANDBOX` environment variable (and
+don't forget allow access to each database's host and port, see the
+`SANDBOXING_HOST_AND_PORT` database property below).
+
+The sandboxing feature is, together with other precautions, intended for 
+publicly accessed sites and not something an ordinary user would have a use for
+- you should probably just restrict access to the entire REPL and ignore the
+sandboxing feature.
+
+
 == Database connections
 
 === Setup
@@ -126,6 +143,14 @@ SCRIPT_PREFIX:: text to automatically inject before any user scripts, use it to
 provide common imports or anything else that will make the users' life easier.
 By default, `import org.jooq.impl.DSL` and 
 `import static org.jooq.impl.DSL.*;` will be prefixed;
+SANDBOXING_HOST_AND_PORT:: if present and not blank and sandboxing is being used,
+permission will be given to Java to connect to this host and port. The format for
+this property is the same as used in the
+https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/net/SocketPermission.html[SocketPermission]
+class (e.g. `127.0.0.1:5432`, wildcards are allowed). Note that if sandboxing _is_
+in use and this property is _not_ given, connecting to this database will probably
+not work - this is because arbitrary connection strings are hard to parse reliably
+so this project currently isn't even trying to.
 
 For example, to define a database using the key 'OLD_POSTGRES' one could use
 environment variables named `DATABASE_OLD_POSTGRES_DESCRIPTION`, 

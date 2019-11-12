@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +50,9 @@ public class Evaluator implements AutoCloseable {
 
     private final Supplier<AugmentedOutput> EMPTY_AUGMENTATION_SUPPPLIER = () -> { return null ;};
 
+    /** Try to sandbox a spawned process as much as possible? */
+    private final boolean sandbox;
+
     /**
      * A buffer that will contain the standard output of any evaluation.
      */
@@ -84,12 +88,13 @@ public class Evaluator implements AutoCloseable {
      * terminated.
      *
      * @param extraClasspath Directories containing classes and JAR files to add to the spawned process' classpath.
+     * @param sandbox If true, try to sandbox the spawned process' access to files, local machine and network via a security policy
      */
-    public static Evaluator spawn(List<String> extraClasspath) {
+    public static Evaluator spawn(List<String> extraClasspath, boolean sandbox) {
         // Copied from JShell class
         String spec = "jdi:launch(true)";
 
-        return new Evaluator(spec, extraClasspath);
+        return new Evaluator(spec, extraClasspath, sandbox);
     }
 
     /**
@@ -97,20 +102,21 @@ public class Evaluator implements AutoCloseable {
      * shared variables and share the same classpath.
      */
     public static Evaluator local() {
-        return new Evaluator("local", null);
+        return new Evaluator("local", null, false);
     }
 
-    private Evaluator(String mode, List<String> extraClasspath) {
+    private Evaluator(String mode, List<String> extraClasspath, boolean sandbox) {
         this.mode = mode;
         this.extraClasspath = extraClasspath;
+        this.sandbox = sandbox;
     }
 
-    public void init() {
+    public void init(List<Database> databases) {
         outputStorage = new ByteArrayOutputStream();
         outputPrintStream = new PrintStream(outputStorage, true, StandardCharsets.UTF_8);
         errorStorage = new ByteArrayOutputStream();
         errorPrintStream = new PrintStream(errorStorage, true, StandardCharsets.UTF_8);
-        jShell = buildJShell(outputPrintStream, errorPrintStream);
+        jShell = buildJShell(outputPrintStream, errorPrintStream, databases);
     }
 
     @Override
@@ -148,9 +154,9 @@ public class Evaluator implements AutoCloseable {
      * @param request The script to evaluate.
      * @return The evaluation result
      */
-    public EvaluationResponse evaluate(Database db, EvaluationRequest request) {
+    public EvaluationResponse evaluate(Database db, EvaluationRequest request, List<Database> databases) {
         if (jShell == null) {
-            init();
+            init(databases);
         }
 
         var activeShell = jShell;
@@ -247,13 +253,13 @@ public class Evaluator implements AutoCloseable {
      * Returns code completion suggestions.
      * @param request The script we wanted completion for.
      */
-    public SuggestionResponse suggest(Database db, EvaluationRequest request) {
+    public SuggestionResponse suggest(Database db, EvaluationRequest request, List<Database> databases) {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
         if (jShell == null) {
-            init();
+            init(databases);
         }
 
         try {
@@ -277,13 +283,13 @@ public class Evaluator implements AutoCloseable {
      * Returns javadoc for the selected code.
      * @param request The script we want javadocs for.
      */
-    public List<DocumentationResponse> javadoc(Database db, EvaluationRequest request) {
+    public List<DocumentationResponse> javadoc(Database db, EvaluationRequest request, List<Database> databases) {
         if (request.getCursorPosition() == null) {
             throw new IllegalArgumentException("Cursor position required to trigger completion!");
         }
 
         if (jShell == null) {
-            init();
+            init(databases);
         }
 
         try {
@@ -405,7 +411,7 @@ public class Evaluator implements AutoCloseable {
         return events.get(0);
     }
 
-    private JShell buildJShell(PrintStream outputStream, PrintStream errorStream) {
+    private JShell buildJShell(PrintStream outputStream, PrintStream errorStream, List<Database> databases) {
         var builder = JShell.builder()
         .executionEngine(mode);
 
@@ -416,7 +422,24 @@ public class Evaluator implements AutoCloseable {
             builder.err(errorStream);
         }
 
-        //builder.remoteVMOptions("-Djava.security.manager=default");
+        if (sandbox) {
+            try {
+                List<String> databaseHostsAndPorts = null;
+                if (databases != null) {
+                    databaseHostsAndPorts = databases.stream()
+                        .map(db -> db.sandboxingHostAndPort)
+                        .filter(Objects::nonNull)
+                        .collect(toList());
+                }
+
+                var securityFile = SecurityProperties.getPath(databaseHostsAndPorts);
+                builder
+                    .remoteVMOptions("-Djava.security.manager")
+                    .remoteVMOptions("-Djava.security.policy=" + securityFile.toAbsolutePath().toString());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
 
         var shell = builder.build();
         if (extraClasspath != null) {

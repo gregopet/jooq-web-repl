@@ -73,6 +73,7 @@ run {
         DATABASE_POSTGRES_USER : 'postgres',
         DATABASE_POSTGRES_PASSWORD : '',
         DATABASE_POSTGRES_SCRIPT_PREFIX : 'import static org.jooq.impl.DSL.*; import org.jooq.impl.DSL; import static sakila.default_schema.Tables.*;',
+        DATABASE_POSTGRES_SANDBOXING_HOST_AND_PORT : 'localhost:5432',
         EVALUATOR_CLASSPATH: "$buildDir/evaluatorRuntime $projectDir/../postgres"
   ])
 }

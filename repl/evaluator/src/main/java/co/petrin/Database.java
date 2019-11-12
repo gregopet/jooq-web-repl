@@ -28,16 +28,24 @@ public class Database {
     /** A text that will automatically be inserted before any user script, for e.g. imports */
     public final String scriptPrefix;
 
+    /**
+     * A sandboxing host specification. Hosts and ports cannot be reliably parsed from an arbitrary DB connection string
+     * so they need to be provided separately in case sandboxing will be used.
+     * @see java.net.SocketPermission
+     */
+    public final String sandboxingHostAndPort;
+
     private static final String CONFIGURATION_PREFIX = "DATABASE_";
     private static final AtomicInteger idSequence = new AtomicInteger();
 
-    public Database(String connectionString, String description, String user, String password, String scriptPrefix) {
+    public Database(String connectionString, String description, String user, String password, String scriptPrefix, String sandboxingHostAndPort) {
         this.id = idSequence.getAndIncrement();
         this.connectionString = connectionString;
         this.description = StringUtils.defaultIfNull(description, "");
         this.user = user;
         this.password = password;
         this.scriptPrefix = scriptPrefix;
+        this.sandboxingHostAndPort = sandboxingHostAndPort;
     }
 
     /** Parse available databases from the environment settings */
@@ -53,7 +61,8 @@ public class Database {
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_DESCRIPTION"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_USER"),
                 System.getenv(CONFIGURATION_PREFIX + dbName + "_PASSWORD"),
-                System.getenv(CONFIGURATION_PREFIX + dbName + "_SCRIPT_PREFIX")
+                System.getenv(CONFIGURATION_PREFIX + dbName + "_SCRIPT_PREFIX"),
+                System.getenv(CONFIGURATION_PREFIX + dbName + "_SANDBOXING_HOST_AND_PORT")
             ))
             .collect(Collectors.toList());
     }

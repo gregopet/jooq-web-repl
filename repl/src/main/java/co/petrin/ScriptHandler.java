@@ -49,6 +49,9 @@ public class ScriptHandler {
     /** Name of the system variable containing a whitespace-separated classpath to provide a remote evaluator with */
     private static final String EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE = "EVALUATOR_CLASSPATH";
 
+    /** Run Evaluators using the Java security manager? */
+    private final boolean useJavaSandboxing;
+
     public ScriptHandler() {
         databases = Database.parseFromEnvironment();
         databasesJson = getDatabasesJson(databases);
@@ -60,6 +63,8 @@ public class ScriptHandler {
                 LOG.info("  " + db.toString());
             }
         }
+        useJavaSandboxing = System.getenv().containsKey("USE_JAVA_SANDBOX");
+        LOG.info("Eval scripts inside Java Sandboxes: " + useJavaSandboxing);
     }
 
     /**
@@ -85,7 +90,7 @@ public class ScriptHandler {
                 SCRIPT_LOG.info("Evaluating script (" + dbDescriptor + "): " + req.getScript());
             }
 
-            var response = getEvaluator(ctx).evaluate(db, req);
+            var response = getEvaluator(ctx).evaluate(db, req, databases);
             ctx.put(EVALUATION_RESULT_KEY, response);
             ctx.next();
         }).handler(ctx -> {
@@ -116,7 +121,7 @@ public class ScriptHandler {
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/suggest").blockingHandler(ctx -> {
             Database db = ctx.get(DATABASE_CTX_KEY);
             EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
-            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).suggest(db, req));
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).suggest(db, req, databases));
             ctx.next();
         }).handler(ctx -> ctx
             .response()
@@ -126,7 +131,7 @@ public class ScriptHandler {
         router.postWithRegex(DB_ENDPOINTS_PREFIX + "/javadoc").blockingHandler(ctx -> {
             Database db = ctx.get(DATABASE_CTX_KEY);
             EvaluationRequest req = ctx.get(REQUEST_CTX_KEY);
-            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).javadoc(db, req));
+            ctx.put(EVALUATION_RESULT_KEY, getEvaluator(ctx).javadoc(db, req, databases));
             ctx.next();
         }).handler(ctx -> ctx
             .response()
@@ -167,14 +172,14 @@ public class ScriptHandler {
     private Evaluator createEvaluator() {
         var evalCp = StringUtils.defaultIfEmpty(System.getenv(EVALUATOR_CLASSPATH_ENVIRONMENT_VARIABLE), "");
         var cpList = Arrays.stream(evalCp.split("\\s")).filter(StringUtils::isNotBlank).collect(toList());
-        return Evaluator.spawn(cpList);
+        return Evaluator.spawn(cpList, useJavaSandboxing);
     }
 
     private ConcurrentLinkedQueue<Evaluator> evaluators = new ConcurrentLinkedQueue<>();
     private void prepareEvaluator() {
         // TODO: do this in a thread pool or something?
         Evaluator evaluator = createEvaluator();
-        evaluator.init();
+        evaluator.init(databases);
         evaluators.add(evaluator);
     }
 

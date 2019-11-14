@@ -47,6 +47,9 @@ dependencies {
   compile project(":evaluator")
   compile "io.vertx:vertx-core:$vertxVersion"
   compile "io.vertx:vertx-web:$vertxVersion"
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+
+
 
     // Spock & testcontainers
     testCompile "org.codehaus.groovy:groovy-all:2.4.15"
@@ -76,6 +79,7 @@ run {
         DATABASE_POSTGRES_SANDBOXING_HOST_AND_PORT : 'localhost:5432',
         EVALUATOR_CLASSPATH: "$buildDir/evaluatorRuntime $projectDir/../postgres"
   ])
+    systemProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory")
 }
 
 task('runFromDocker', type: JavaExec, description: 'Main entry point for docker containers') {

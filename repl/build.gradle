@@ -17,6 +17,13 @@ buildscript {
 
         // make extra-libs available to the build system as well
         classpath fileTree(dir: 'extra-libs', includes: ['*.jar'])
+
+        // find any additional dependencies required by the evaluator (they may be required for jOOQ model,
+        // a typical example would be a database driver)
+        def compileDependencies = System.getenv('REPL_COMPILE_DEPENDENCIES')?.split("\\s")?.findAll() ?: []
+     	  for (int a = 0; a < compileDependencies.size(); a++) {
+          classpath(compileDependencies[a])
+        }
     }
 }
 
